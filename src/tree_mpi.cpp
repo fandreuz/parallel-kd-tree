@@ -143,7 +143,7 @@ int *build_tree_serial(data_type *array, int size, int start_index) {
   int dimension = 0;
   int split_point_idx = find_split_point(array, size, dimension);
 
-  splits.push_back(split_point_idx);
+  serial_splits[start_index] = split_point_idx;
 
   if (size <= 1) {
     return finalize();
@@ -154,7 +154,7 @@ int *build_tree_serial(data_type *array, int size, int start_index) {
     build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
                       right_region);
     // left
-    return build_tree_serial(array, split_point_idx, start_index);
+    return build_tree_serial(array, split_point_idx, start_index + 1);
   }
 }
 
@@ -178,7 +178,7 @@ int *finalize() {
     right_rank = children.at(i);
     right_branch_size = right_branch_sizes.at(i);
     left_branch_size = left_branch_sizes.at(i);
-    split_idx = splits.at(i);
+    split_idx = parallel_splits.at(i);
 
     merging_array = new int[right_branch_size + left_branch_size + 1];
     right_branch_buffer = new int[right_branch_size];
