@@ -1,9 +1,9 @@
 #include "tree.h"
+#include <cstdint>
 #include <iostream>
 #include <math.h>
-#include <vector>
-#include <cstdint>
 #include <mpi.h>
+#include <vector>
 
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
 
@@ -24,10 +24,10 @@ std::vector<int> children;
 std::vector<int> right_branch_sizes;
 std::vector<int> left_branch_sizes;
 
-void build_tree(data_type *array, int size);
+int *build_tree(data_type *array, int size);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
-void finalize();
+int *finalize();
 
 int main() {
   int rank;
@@ -37,11 +37,14 @@ int main() {
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
   if (rank != 0) {
+    MPI_Request request;
+
     // receive the number of items in the branch assigned to this process, and
     // the depth of the tree at this point
     int br_size_depth_parent[3];
     MPI_Recv(&br_size_depth_parent, 3, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
-             MPI_COMM_WORLD, requests + n_processes * (i - 1));
+             MPI_COMM_WORLD, &request);
+
     int branch_size = br_size_depth_parent[0];
     int depth = br_size_depth_parent[1];
     parent = br_size_depth_parent[2];
@@ -49,9 +52,9 @@ int main() {
     data_type *data = new data_type[branch_size];
     // receive the data in the branch assigned to this process
     MPI_Recv(data, branch_size, mpi_data_type, MPI_ANY_SOURCE, MPI_ANY_TAG,
-             MPI_COMM_WORLD, requests + n_processes * (i - 1) - 1);
+             MPI_COMM_WORLD, &request);
 
-    build_tree(data, branch_size, depth, splits);
+    build_tree(data, branch_size, depth);
   } else {
     // root process
     data_type data[100];
@@ -87,7 +90,7 @@ int *build_tree(data_type *array, int size, int depth) {
   int dimension = 0;
   int split_point_idx = find_split_point(array, size, dimension);
 
-  splits.push_back(split_point_idx);
+  parallel_splits.push_back(split_point_idx);
 
   // we hit the bottom line
   if (size <= 1) {
@@ -192,10 +195,10 @@ int *finalize() {
 
       // we put into the three what's inside the left subtree
       std::memcpy(merging_array + 1, left_branch_buffer,
-                n_of_nodes * sizeof(int));
+                  n_of_nodes * sizeof(int));
       // we put into the three what's inside the right subtree
       std::memcpy(merging_array + n_of_nodes + 1, right_branch_buffer,
-                n_of_nodes * sizeof(int));
+                  n_of_nodes * sizeof(int));
     }
 
     delete[] right_branch_buffer;
