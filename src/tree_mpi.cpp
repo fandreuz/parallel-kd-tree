@@ -109,7 +109,7 @@ int *build_tree(data_type *array, int size, int depth) {
 
       // right
       build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
-                        serial_splits, right_region);
+                        right_region);
       // left
       return build_tree_serial(array, split_point_idx, 0);
     } else {

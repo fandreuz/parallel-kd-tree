@@ -28,4 +28,4 @@ struct KNode {
     kpoint data;
     // left and right branch originating from this node
     KNode *left = nullptr, *right = nullptr;
-}
+};
