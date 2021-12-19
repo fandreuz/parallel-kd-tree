@@ -2,6 +2,8 @@
 #include <iostream>
 #include <math.h>
 #include <vector>
+#include <cstdint>
+#include <mpi.h>
 
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
 
@@ -189,9 +191,11 @@ int *finalize() {
       int n_of_nodes = pow(2.0, (double)dpth - 1);
 
       // we put into the three what's inside the left subtree
-      std::memcpy(merging_array, left_branch_buffer, n_of_nodes);
+      std::memcpy(merging_array + 1, left_branch_buffer,
+                n_of_nodes * sizeof(int));
       // we put into the three what's inside the right subtree
-      std::memcpy(merging_array + n_of_nodes, right_branch_buffer, n_of_nodes);
+      std::memcpy(merging_array + n_of_nodes + 1, right_branch_buffer,
+                n_of_nodes * sizeof(int));
     }
 
     delete[] right_branch_buffer;
@@ -204,9 +208,11 @@ int *finalize() {
   if (parent != -1) {
     // we finished merging left and right parallel subtrees, we can contact the
     // parent and transfer the data
-    MPI_Send(left_branch_buffer, splits.size(), MPI_INT, parent,
-             TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
+    MPI_Send(left_branch_buffer, right_branch_size + left_branch_size + 1,
+             MPI_INT, parent, TAG_RIGHT_PROCESS_PROCESSING_OVER,
+             MPI_COMM_WORLD);
     delete[] left_branch_buffer;
+    return nullptr;
   } else {
     // this is the root process
     return left_branch_buffer;
