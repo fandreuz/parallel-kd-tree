@@ -1,9 +1,9 @@
 #include "tree.h"
-#include <cstdint>
 #include <iostream>
 #include <math.h>
 #include <mpi.h>
 #include <vector>
+#include <cstring>
 
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
 
