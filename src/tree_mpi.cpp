@@ -1,8 +1,8 @@
+#include <cstring>
 #include <iostream>
 #include <math.h>
 #include <mpi.h>
 #include <vector>
-#include <cstring>
 
 #if !defined(DOUBLE_PRECISION)
 #define mpi_data_type MPI_FLOAT
@@ -37,7 +37,9 @@ int *build_tree_serial(data_type *array, int size, int start_index);
 // to the parent process
 int *finalize();
 
-int main() {
+KNode *as_knode(int *tree) { return nullptr; }
+
+int *generate_2d_tree(data_type *data, int size) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -64,18 +66,8 @@ int main() {
 
     build_tree(data, branch_size, depth);
   } else {
-    // root process
-    data_type data[100];
-    for (int i = 0; i < 100; i++) {
-      data[i] = i * i - 2 * i;
-    }
     int *tree = build_tree(data, 100, 1);
-
-    for (int i = 0; i < 100; i++) {
-      std::cout << tree[i] << std::endl;
-    }
-
-    delete[] tree;
+    return
   }
 }
 
