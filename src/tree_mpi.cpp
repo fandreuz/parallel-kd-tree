@@ -1,9 +1,10 @@
-#include "tree.h"
 #include <iostream>
 #include <math.h>
 #include <mpi.h>
 #include <vector>
 #include <cstring>
+
+#define mpi_data_type MPI_DOUBLE
 
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
 
