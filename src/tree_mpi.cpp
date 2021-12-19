@@ -25,8 +25,8 @@ std::vector<int> children;
 std::vector<int> right_branch_sizes;
 std::vector<int> left_branch_sizes;
 
-int *build_tree(data_type *array, int size, int depth);
-int *build_tree_serial(data_type *array, int size, int start_index);
+int *build_tree(mpi_data_type *array, int size, int depth);
+int *build_tree_serial(mpi_data_type *array, int size, int start_index);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
 int *finalize();
@@ -51,7 +51,7 @@ int main() {
     int depth = br_size_depth_parent[1];
     parent = br_size_depth_parent[2];
 
-    data_type *data = new data_type[branch_size];
+    mpi_data_type *data = new mpi_data_type[branch_size];
     // receive the data in the branch assigned to this process
     MPI_Recv(data, branch_size, mpi_data_type, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
@@ -59,7 +59,7 @@ int main() {
     build_tree(data, branch_size, depth);
   } else {
     // root process
-    data_type data[100];
+    mpi_data_type data[100];
     for (int i = 0; i < 100; i++) {
       data[i] = i * i - 2 * i;
     }
@@ -73,7 +73,7 @@ int main() {
   }
 }
 
-int find_split_point(data_type *array, int size, int dimension) { return 0; }
+int find_split_point(mpi_data_type *array, int size, int dimension) { return 0; }
 
 /*
    Construct a tree in a parallel way. The current process takes care of the
@@ -88,7 +88,7 @@ int find_split_point(data_type *array, int size, int dimension) { return 0; }
    - depth is the depth of a node created by a call to build_tree. depth starts
     from 1
 */
-int *build_tree(data_type *array, int size, int depth) {
+int *build_tree(mpi_data_type *array, int size, int depth) {
   int dimension = 0;
   int split_point_idx = find_split_point(array, size, dimension);
 
@@ -141,7 +141,7 @@ int *build_tree(data_type *array, int size, int depth) {
    - array is the set of values to be inserted into the tree.
    - size is the size of array
 */
-int *build_tree_serial(data_type *array, int size, int start_index) {
+int *build_tree_serial(mpi_data_type *array, int size, int start_index) {
   int dimension = 0;
   int split_point_idx = find_split_point(array, size, dimension);
 
