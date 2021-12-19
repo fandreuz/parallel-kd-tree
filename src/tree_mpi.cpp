@@ -25,6 +25,7 @@ std::vector<int> right_branch_sizes;
 std::vector<int> left_branch_sizes;
 
 int *build_tree(data_type *array, int size);
+int *build_tree_serial(data_type *array, int size, int start_index);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
 int *finalize();
@@ -160,7 +161,7 @@ int *build_tree_serial(data_type *array, int size, int start_index) {
 
 int *finalize() {
   if (!serial_splits)
-    return;
+    return nullptr;
 
   // we wait for all the child processes to complete their work
   int n_children = children.size();
@@ -184,7 +185,7 @@ int *finalize() {
     right_branch_buffer = new int[right_branch_size];
 
     MPI_Status status;
-    MPI_Recv(buffer, right_branch_size, MPI_INT, right_rank,
+    MPI_Recv(right_branch_buffer, right_branch_size, MPI_INT, right_rank,
              TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD, &status);
 
     // the root of this tree is the data point used to split left and right
