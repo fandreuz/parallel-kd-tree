@@ -33,15 +33,13 @@ public:
   // someone else will take care of destroying the data
   ~DataPoint() = delete;
 
-  DataPoint &operator=(DataPoint &&other) {
+  DataPoint(DataPoint &&other) {
     if (this != &other) {
       delete[] values;
 
       values = other.values;
       data_dimension = other.data_dimension;
     }
-
-    return *this;
   }
 
   const data_type get(int index) const {
@@ -113,7 +111,7 @@ data_type *finalize();
   point.
   size is the dimension of the dataset, i.e. len(data) / dms.
 */
-int *generate_kd_tree(data_type *data, int size, int dms) {
+data_type *generate_kd_tree(data_type *data, int size, int dms) {
   // we can save dims as a global variable since it is not going to change. it
   // is also constant for all the processes.
   dims = dms;
