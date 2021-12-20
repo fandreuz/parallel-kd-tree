@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <math.h>
@@ -126,14 +127,14 @@ int *generate_kd_tree(data_type *data, int size, int dms) {
 
     data = new data_type[size * dms];
     // receive the data in the branch assigned to this process
-    MPI_Recv(data, size * dims, mpi_data_type, MPI_ANY_SOURCE,
-             MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(data, size * dims, mpi_data_type, MPI_ANY_SOURCE, MPI_ANY_TAG,
+             MPI_COMM_WORLD, &status);
   }
 
   // we create an array which packs all the data in a convenient way
   // this weird mechanic is needed because we do not want to call the default
   // constructor (which the plain 'new' does)
-  DataPoint *array = (DataPoint*) ::operator new (sizeof(DataPoint));
+  DataPoint *array = (DataPoint *)::operator new(size * sizeof(DataPoint));
   for (int i = 0; i < size; i++) {
     new (array + i) DataPoint(data + i * dims, dims);
   }
@@ -157,7 +158,7 @@ int select_splitting_dimension(int depth) { return (depth - 1) % dims; }
 data_type *unpack_array(DataPoint *array, int size) {
   data_type *unpacked = new data_type[size * dims];
   for (int i = 0; i < size; i++) {
-    std::memcpy(unpacked + i * dims, array[i].data, dims * sizeof(int));
+    std::memcpy(unpacked + i * dims, array[i].data(), dims * sizeof(int));
   }
   return unpacked;
 }
@@ -177,7 +178,7 @@ data_type *unpack_array(DataPoint *array, int size) {
 */
 int *build_tree(DataPoint *array, int size, int depth) {
   int dimension = select_splitting_dimension(depth);
-  int split_point_idx = find_split_point(array, size, dimension);
+  int split_point_idx = sort_and_split(array, size, dimension);
 
   parallel_splits.push_back(split_point_idx);
 
@@ -186,9 +187,10 @@ int *build_tree(DataPoint *array, int size, int depth) {
     return finalize();
   } else {
     if (depth > max_depth) {
-      serial_splits = new int[size];
-      for (int i = 0; i < size; i++)
-        serial_splits[i] = 0;
+      serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
+      for (int i = 0; i < size; i++) {
+        new (array + i) DataPoint(data + i * dims, dims);
+      }
 
       // depth of the binomial tree resulting from this data
       int right_region = size / 2;
@@ -229,7 +231,7 @@ int *build_tree(DataPoint *array, int size, int depth) {
 */
 int *build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
   int dimension = 0;
-  int split_point_idx = find_split_point(array, size, dimension);
+  int split_point_idx = sort_and_split(array, size, dimension);
 
   serial_splits[start_index] = split_point_idx;
 
