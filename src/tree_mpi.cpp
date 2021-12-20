@@ -94,11 +94,11 @@ std::vector<int> children;
 std::vector<int> right_branch_sizes;
 std::vector<int> left_branch_sizes;
 
-int *build_tree(DataPoint *array, int size, int depth);
-int *build_tree_serial(DataPoint *array, int size, int depth, int start_index);
+data_type *build_tree(DataPoint *array, int size, int depth);
+data_type *build_tree_serial(DataPoint *array, int size, int depth, int start_index);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
-int *finalize();
+data_type *finalize();
 
 // KNode *as_knode(int *tree) { return nullptr; }
 
@@ -190,7 +190,7 @@ data_type *unpack_array(DataPoint *array, int size) {
    - depth is the depth of a node created by a call to build_tree. depth starts
     from 1
 */
-int *build_tree(DataPoint *array, int size, int depth) {
+data_type *build_tree(DataPoint *array, int size, int depth) {
   int dimension = select_splitting_dimension(depth);
   int split_point_idx = sort_and_split(array, size, dimension);
 
@@ -219,8 +219,9 @@ int *build_tree(DataPoint *array, int size, int depth) {
           unpack_array(array + split_point_idx + 1, right_branch_size);
 
       // we delegate the right part to another process
+      // this is synchronous since we also want to delete the buffer ASAP
       MPI_Send(right_branch, right_branch_size, mpi_data_type,
-               right_process_rank, 0, MPI_COMM_WORLD, &req);
+               right_process_rank, 0, MPI_COMM_WORLD);
       delete[] right_branch;
 
       children.push_back(right_process_rank);
@@ -240,7 +241,7 @@ int *build_tree(DataPoint *array, int size, int depth) {
    - array is the set of values to be inserted into the tree.
    - size is the size of array
 */
-int *build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
+data_type *build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
   int dimension = 0;
   int split_point_idx = sort_and_split(array, size, dimension);
 
@@ -261,7 +262,7 @@ int *build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
   }
 }
 
-int *finalize() {
+data_type *finalize() {
   if (!serial_splits)
     return nullptr;
 
@@ -270,13 +271,13 @@ int *finalize() {
   int right_rank = -1, right_branch_size = -1, left_branch_size = -1,
       split_idx = -1;
   // buffer which contains the split indexes from the right branch
-  int *right_branch_buffer = nullptr;
-  int *left_branch_buffer = serial_splits;
+  data_type *right_branch_buffer = nullptr;
+  data_type *left_branch_buffer = unpack_array(serial_splits);
   serial_splits = nullptr;
 
   // merged_array contains the values which results from merging a right branch
   // with a left branch.
-  int *merging_array;
+  data_type *merging_array;
   for (int i = n_children - 1; i > 0; --i) {
     right_rank = children.at(i);
     right_branch_size = right_branch_sizes.at(i);
