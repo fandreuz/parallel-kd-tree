@@ -17,8 +17,8 @@
 
 // represents a data point
 class DataPoint {
-  data_type *values;
-  int data_dimension;
+  data_type *values = nullptr;
+  int data_dimension = -1;
 
 public:
   DataPoint(data_type *dt, int dims) {
@@ -30,7 +30,15 @@ public:
 
     data_dimension = dims;
   }
+  // someone else will take care of destroying the data
   ~DataPoint() = delete;
+
+  DataPoint &operator=(DataPoint &&other) {
+    delete[] values;
+
+    values = other.values;
+    data_dimension = other.data_dimension;
+  }
 
   const data_type get(int index) const {
 #ifdef NONSAFE
@@ -71,6 +79,8 @@ int max_depth;
 // contains only "parallel" splits, serial splits are handled otherwise.
 std::vector<int> parallel_splits;
 
+// this is an array of pointers since DataPoint resulting from serial splits
+// are taken from an already existing DataPoint array
 DataPoint *serial_splits;
 
 // list of processes started by this process
@@ -188,9 +198,6 @@ int *build_tree(DataPoint *array, int size, int depth) {
   } else {
     if (depth > max_depth) {
       serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
-      for (int i = 0; i < size; i++) {
-        new (array + i) DataPoint(data + i * dims, dims);
-      }
 
       // depth of the binomial tree resulting from this data
       int right_region = size / 2;
@@ -233,7 +240,8 @@ int *build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
   int dimension = 0;
   int split_point_idx = sort_and_split(array, size, dimension);
 
-  serial_splits[start_index] = split_point_idx;
+  new (serial_splits + start_index)
+      DataPoint(std::move(array[split_point_idx]));
 
   if (size <= 1) {
     return finalize();
