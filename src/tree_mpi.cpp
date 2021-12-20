@@ -40,6 +40,12 @@ public:
     }
   }
 
+  DataPoint& operator=(const DataPoint& other) {
+    values = other.values;
+    data_dimension = other.data_dimension;
+    return *this;
+  }
+
   const data_type get(int index) const {
 #ifdef NONSAFE
     if (index < data_dimension)
