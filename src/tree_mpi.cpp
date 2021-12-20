@@ -95,7 +95,8 @@ std::vector<int> right_branch_sizes;
 std::vector<int> left_branch_sizes;
 
 data_type *build_tree(DataPoint *array, int size, int depth);
-data_type *build_tree_serial(DataPoint *array, int size, int depth, int start_index);
+data_type *build_tree_serial(DataPoint *array, int size, int depth,
+                             int start_index);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
 data_type *finalize();
@@ -241,7 +242,8 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
    - array is the set of values to be inserted into the tree.
    - size is the size of array
 */
-data_type *build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
+data_type *build_tree_serial(DataPoint *array, int size, int depth,
+                             int start_index) {
   int dimension = 0;
   int split_point_idx = sort_and_split(array, size, dimension);
 
@@ -268,11 +270,11 @@ data_type *finalize() {
 
   // we wait for all the child processes to complete their work
   int n_children = children.size();
-  int right_rank = -1, right_branch_size = -1, left_branch_size = -1,
-      split_idx = -1;
+  int right_rank = -1, right_branch_size = -1,
+      left_branch_size = left_branch_sizes.at(n_children - 1), split_idx = -1;
   // buffer which contains the split indexes from the right branch
   data_type *right_branch_buffer = nullptr;
-  data_type *left_branch_buffer = unpack_array(serial_splits);
+  data_type *left_branch_buffer = unpack_array(serial_splits, left_branch_size);
   serial_splits = nullptr;
 
   // merged_array contains the values which results from merging a right branch
