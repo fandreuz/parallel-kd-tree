@@ -85,7 +85,7 @@ int *build_tree_serial(data_type *array, int size, int start_index);
 // to the parent process
 int *finalize();
 
-KNode *as_knode(int *tree) { return nullptr; }
+// KNode *as_knode(int *tree) { return nullptr; }
 
 /*
   Generate a kd tree from the given data. If this process is not the main
@@ -131,9 +131,11 @@ int *generate_kd_tree(data_type *data, int size, int dms) {
   }
 
   // we create an array which packs all the data in a convenient way
-  DataPoint *array = new DataPoint[size];
+  // this weird mechanic is needed because we do not want to call the default
+  // constructor (which the plain 'new' does)
+  DataPoint *array = (DataPoint*) ::operator new (sizeof(DataPoint));
   for (int i = 0; i < size; i++) {
-    array[i] = new DataPoint(data + i * dims, dims);
+    new (array + i) DataPoint(data + i * dims, dims);
   }
 
   return build_tree(data, size, depth);
