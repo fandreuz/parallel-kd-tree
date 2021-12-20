@@ -31,7 +31,7 @@ public:
   }
   ~DataPoint() = delete;
 
-  data_type get(int index) {
+  const data_type get(int index) const {
 #ifdef NONSAFE
     if (index < data_dimension)
       return values[index];
@@ -124,12 +124,10 @@ int *generate_kd_tree(data_type *data, int size, int dms) {
     // rank of the parent which "started" (i.e. waked) this process
     parent = br_size_depth_parent[2];
 
-    data = new data_type[branch_size * dms];
+    data = new data_type[size * dms];
     // receive the data in the branch assigned to this process
-    MPI_Recv(data, branch_size * dims, mpi_data_type, MPI_ANY_SOURCE,
+    MPI_Recv(data, size * dims, mpi_data_type, MPI_ANY_SOURCE,
              MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-    build_tree(data, branch_size, depth);
   }
 
   // we create an array which packs all the data in a convenient way
