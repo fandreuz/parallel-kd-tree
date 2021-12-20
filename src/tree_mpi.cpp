@@ -34,10 +34,14 @@ public:
   ~DataPoint() = delete;
 
   DataPoint &operator=(DataPoint &&other) {
-    delete[] values;
+    if (this != &other) {
+      delete[] values;
 
-    values = other.values;
-    data_dimension = other.data_dimension;
+      values = other.values;
+      data_dimension = other.data_dimension;
+    }
+
+    return *this;
   }
 
   const data_type get(int index) const {
