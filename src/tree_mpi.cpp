@@ -95,7 +95,7 @@ std::vector<int> right_branch_sizes;
 std::vector<int> left_branch_sizes;
 
 int *build_tree(DataPoint *array, int size, int depth);
-int *build_tree_serial(DataPoint *array, int size, int start_index);
+int *build_tree_serial(DataPoint *array, int size, int depth, int start_index);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
 int *finalize();
@@ -153,7 +153,7 @@ int *generate_kd_tree(data_type *data, int size, int dms) {
     new (array + i) DataPoint(data + i * dims, dims);
   }
 
-  return build_tree(data, size, depth);
+  return build_tree(array, size, depth);
 }
 
 // sort the given array such that the element in the middle is exactly the
