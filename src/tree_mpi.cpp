@@ -30,8 +30,6 @@ public:
 
     data_dimension = dims;
   }
-  // someone else will take care of destroying the data
-  ~DataPoint() = delete;
 
   DataPoint(DataPoint &&other) {
     if (this != &other) {
