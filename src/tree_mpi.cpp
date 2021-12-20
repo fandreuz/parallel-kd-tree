@@ -1,5 +1,3 @@
-#include "array_iterator.h"
-#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <math.h>
@@ -148,8 +146,7 @@ int *generate_kd_tree(data_type *data, int size, int dms) {
 // after are respectively lower/greater than that item.
 int sort_and_split(DataPoint *array, int size, int axis) {
   data_type median;
-  std::nth_element(vector_iterator(array), &median,
-                   vector_iterator(array + size - 1), DataPointCompare(axis));
+  std::nth_element(array, &median, array + size, DataPointCompare(axis));
   return size / 2;
 }
 
