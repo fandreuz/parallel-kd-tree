@@ -94,8 +94,8 @@ std::vector<int> children;
 std::vector<int> right_branch_sizes;
 std::vector<int> left_branch_sizes;
 
-int *build_tree(data_type *array, int size, int depth);
-int *build_tree_serial(data_type *array, int size, int start_index);
+int *build_tree(DataPoint *array, int size, int depth);
+int *build_tree_serial(DataPoint *array, int size, int start_index);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
 int *finalize();
