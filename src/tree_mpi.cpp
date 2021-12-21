@@ -215,23 +215,23 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
 */
 data_type *build_tree_serial(DataPoint *array, int size, int depth,
                              int start_index) {
-  int dimension = 0;
-  int split_point_idx = sort_and_split(array, size, dimension);
-
-#ifdef DEBUG
-  std::cout << "[rank" << rank << "]: serial split against axis " << dimension
-            << ", split_idx = " << split_point_idx << std::endl;
-#endif
-
-  new (serial_splits + start_index)
-      DataPoint(std::move(array[split_point_idx]));
-
   if (size <= 1) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
     return finalize();
   } else {
+    int dimension = select_splitting_dimension(depth);
+    int split_point_idx = sort_and_split(array, size, dimension);
+
+#ifdef DEBUG
+    std::cout << "[rank" << rank << "]: serial split against axis " << dimension
+              << ", split_idx = " << split_point_idx << std::endl;
+#endif
+
+    new (serial_splits + start_index)
+        DataPoint(std::move(array[split_point_idx]));
+
     int right_region = start_index + size / 2;
 
     // right
