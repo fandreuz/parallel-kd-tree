@@ -267,7 +267,8 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
     build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
                       depth + 1, right_region);
     // left
-    build_tree_serial(array, split_point_idx, depth + 1, start_index + 1);
+    if (split_point_idx > 0)
+      build_tree_serial(array, split_point_idx, depth + 1, start_index + 1);
   }
 }
 
