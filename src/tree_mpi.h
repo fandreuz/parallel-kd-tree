@@ -69,7 +69,7 @@ struct DataPointCompare {
 };
 
 // holds the rank of whoever called this process
-extern int parent = -1;
+extern int parent;
 
 // number of dimensions in the dataset
 extern int dims;
