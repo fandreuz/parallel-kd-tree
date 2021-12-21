@@ -1,4 +1,4 @@
-#include "tree_mpi.cpp"
+#include "tree_mpi.h"
 #include <iostream>
 
 int main() {
@@ -7,11 +7,5 @@ int main() {
     dt[i] = i * i - 2 * i;
   }
 
-  int *tree = generate_2d_tree(dt, 100);
-  KNode *knode_tree = as_knode(tree);
-  delete[] tree;
-
-  for (int i = 0; i < 100; i++) {
-    std::cout << tree[i] << std::endl;
-  }
+  int *tree = generate_kd_tree(dt, 100, 2);
 }
