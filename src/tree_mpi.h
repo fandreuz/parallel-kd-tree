@@ -24,7 +24,7 @@ extern int max_depth;
 // list of data point idxes in which this process splitted its branch.
 // this process then got assigned the left branch. note that this vector
 // contains only "parallel" splits, serial splits are handled otherwise.
-extern std::vector<int> parallel_splits;
+extern std::vector<DataPoint> parallel_splits;
 
 // this is an array of pointers since DataPoint resulting from serial splits
 // are taken from an already existing DataPoint array

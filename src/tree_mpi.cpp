@@ -27,7 +27,7 @@ int max_depth;
 // list of data point idxes in which this process splitted its branch.
 // this process then got assigned the left branch. note that this vector
 // contains only "parallel" splits, serial splits are handled otherwise.
-std::vector<int> parallel_splits;
+std::vector<DataPoint> parallel_splits;
 
 // this is an array of pointers since DataPoint resulting from serial splits
 // are taken from an already existing DataPoint array
@@ -177,7 +177,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
     // to be only one "active" call to build_tree (the parent recursive calls
     // are inactive in the sense that as soon as the children build_tree()
     // returns they are going to return too).
-    parallel_splits.push_back(split_point_idx);
+    parallel_splits.push_back(std::move(array[0]));
     return finalize();
   } else {
     if (depth > max_depth) {
@@ -200,7 +200,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
                 << std::endl;
 #endif
 
-      parallel_splits.push_back(split_point_idx);
+      parallel_splits.push_back(std::move(array[split_point_idx]));
 
       int right_process_rank = rank + pow(2.0, max_depth - depth);
       int right_branch_size = size - split_point_idx - 1;
@@ -244,7 +244,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
-    serial_splits[start_index] = array[0];
+    serial_splits[start_index] = std::move(array[0]);
     return;
   } else {
     int dimension = select_splitting_dimension(depth);
@@ -282,7 +282,7 @@ data_type *finalize() {
 #endif
 
   int right_rank = -1, right_branch_size = -1,
-      left_branch_size = left_branch_sizes.at(n_children), split_idx = -1;
+      left_branch_size = left_branch_sizes.at(n_children);
   // buffer which contains the split indexes from the right branch
   data_type *right_branch_buffer = nullptr;
   data_type *left_branch_buffer = unpack_array(serial_splits, left_branch_size);
@@ -295,7 +295,7 @@ data_type *finalize() {
     right_rank = children.at(i);
     right_branch_size = right_branch_sizes.at(i);
     left_branch_size = left_branch_sizes.at(i);
-    split_idx = parallel_splits.at(i);
+    DataPoint split_item = std::move(parallel_splits.at(i));
 
     merging_array =
         new data_type[(right_branch_size + left_branch_size + 1) * dims];
@@ -306,16 +306,17 @@ data_type *finalize() {
              TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD, &status);
 
     // the root of this tree is the data point used to split left and right
-    merging_array[0] = split_idx;
+    std::memcpy(merging_array, split_item.data(), dims);
+
     for (int dpth = 0; dpth < (int)log2(left_branch_size); ++dpth) {
       // number of nodes at the current level in the left/right subtree
       int n_of_nodes = pow(2.0, (double)dpth - 1);
 
       // we put into the three what's inside the left subtree
-      std::memcpy(merging_array + 1, left_branch_buffer,
+      std::memcpy(merging_array + dims, left_branch_buffer,
                   n_of_nodes * dims * sizeof(data_type));
       // we put into the three what's inside the right subtree
-      std::memcpy(merging_array + n_of_nodes + 1, right_branch_buffer,
+      std::memcpy(merging_array + (n_of_nodes + 1) * dims, right_branch_buffer,
                   n_of_nodes * dims * sizeof(data_type));
     }
 
