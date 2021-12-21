@@ -25,8 +25,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  delete[] dt;
-
   data_type *tree = generate_kd_tree(dt, SIZE, DIMS);
   if (rank == 0) {
     for (int i = 0; i < SIZE / DIMS; i++) {
@@ -39,6 +37,8 @@ int main(int argc, char **argv) {
       std::cout << ")";
     }
   }
+
+  delete[] dt;
 
   MPI_Finalize();
 }
