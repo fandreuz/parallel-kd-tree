@@ -68,22 +68,6 @@ public:
     return *this;
   }
 
-  // copy assignment
-  inline DataPoint &operator=(const DataPoint &other) {
-    data_dimension = other.data_dimension;
-
-    values = new data_type[data_dimension];
-
-#ifdef DEBUG
-    std::cerr << "[Copy assignment]: datapoint.values address: " << values
-              << std::endl;
-#endif
-
-    std::memcpy(values, other.values, data_dimension * sizeof(data_type));
-
-    return *this;
-  }
-
   inline const data_type get(int index) const {
 #ifdef NONSAFE
     if (index < data_dimension)
