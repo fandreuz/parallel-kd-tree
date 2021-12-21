@@ -59,6 +59,14 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
   int max_depth = (int)log2(n_processes);
+#ifdef DEBUG
+  if (rank == 0) {
+    std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
+              << std::endl;
+  }
+
+  std::cout << "[rank" << rank << "]: started" << std::endl;
+#endif
 
   int depth = 1;
   if (rank != 0) {
@@ -75,19 +83,33 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
     // rank of the parent which "started" (i.e. waked) this process
     parent = br_size_depth_parent[2];
 
+#ifdef DEBUG
+    std::cout << "[rank" << rank << "]: went to sleep" << std::endl;
+#endif
+
     data = new data_type[size * dms];
     // receive the data in the branch assigned to this process
     MPI_Recv(data, size * dims, mpi_data_type, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
+
+#ifdef DEBUG
+    std::cout << "[rank" << rank << "]: waked by rank" << parent << std::endl;
+#endif
   }
 
-  // we create an array which packs all the data in a convenient way
+  // we create an array which packs all the data in a convenient way.
   // this weird mechanic is needed because we do not want to call the default
   // constructor (which the plain 'new' does)
   DataPoint *array = (DataPoint *)::operator new(size * sizeof(DataPoint));
   for (int i = 0; i < size; i++) {
     new (array + i) DataPoint(data + i * dims, dims);
   }
+
+#ifdef DEBUG
+  std::cout << "[rank" << rank
+            << "]: starting parallel build_tree (branch size: " << size << ")"
+            << std::endl;
+#endif
 
   return build_tree(array, size, depth);
 }
@@ -130,16 +152,31 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
   int dimension = select_splitting_dimension(depth);
   int split_point_idx = sort_and_split(array, size, dimension);
 
+#ifdef DEBUG
+  std::cout << "[rank" << rank << "]: split against " << dimension
+            << ", split_idx = " << split_point_idx << std::endl;
+#endif
+
   parallel_splits.push_back(split_point_idx);
 
   // we hit the bottom line
   if (size <= 1) {
+#ifdef DEBUG
+    std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
+#endif
     return finalize();
   } else {
     if (depth > max_depth) {
+#ifdef DEBUG
+      std::cout << "[rank" << rank
+                << "]: no available processes, going serial from now "
+                << std::endl;
+#endif
+
       serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
 
-      // depth of the binomial tree resulting from this data
+      // starting index of the region of `serial_splits` dedicated to the right
+      // region
       int right_region = size / 2;
 
       // right
@@ -150,6 +187,14 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
     } else {
       int right_process_rank = rank + pow(2.0, max_depth - depth);
       int right_branch_size = size - split_point_idx - 1;
+
+#ifdef DEBUG
+      std::cout << "[rank" << rank
+                << "]: delegating right region (starting from) "
+                << split_point_idx + 1 << " (size " << right_branch_size
+                << " of " << size << ") to rank" << right_process_rank
+                << std::endl;
+#endif
 
       data_type *right_branch =
           unpack_array(array + split_point_idx + 1, right_branch_size);
@@ -186,6 +231,9 @@ data_type *build_tree_serial(DataPoint *array, int size, int depth,
       DataPoint(std::move(array[split_point_idx]));
 
   if (size <= 1) {
+#ifdef DEBUG
+    std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
+#endif
     return finalize();
   } else {
     int right_region = start_index + size / 2;
