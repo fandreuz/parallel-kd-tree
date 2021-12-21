@@ -177,6 +177,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
     // to be only one "active" call to build_tree (the parent recursive calls
     // are inactive in the sense that as soon as the children build_tree()
     // returns they are going to return too).
+    parallel_splits.push_back(split_point_idx);
     return finalize();
   } else {
     if (depth > max_depth) {
@@ -243,6 +244,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
+    serial_splits[start_index] = array[0];
     return;
   } else {
     int dimension = select_splitting_dimension(depth);
