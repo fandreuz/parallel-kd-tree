@@ -154,6 +154,10 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
+    // we can call finalize() from there since per each process there is goint
+    // to be only one "active" call to build_tree (the parent recursive calls
+    // are inactive in the sense that as soon as the children build_tree()
+    // returns they are going to return too).
     return finalize();
   } else {
     if (depth > max_depth) {
@@ -163,7 +167,8 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
                 << std::endl;
 #endif
       serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
-      return build_tree_serial(array, size, depth, 0);
+      build_tree_serial(array, size, depth, 0);
+      return finalize();
     } else {
       int dimension = select_splitting_dimension(depth);
       int split_point_idx = sort_and_split(array, size, dimension);
@@ -213,13 +218,12 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
    - array is the set of values to be inserted into the tree.
    - size is the size of array
 */
-data_type *build_tree_serial(DataPoint *array, int size, int depth,
-                             int start_index) {
+void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
   if (size <= 1) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
-    return finalize();
+    return;
   } else {
     int dimension = select_splitting_dimension(depth);
     int split_point_idx = sort_and_split(array, size, dimension);
@@ -238,8 +242,7 @@ data_type *build_tree_serial(DataPoint *array, int size, int depth,
     build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
                       depth + 1, right_region);
     // left
-    return build_tree_serial(array, split_point_idx, depth + 1,
-                             start_index + 1);
+    build_tree_serial(array, split_point_idx, depth + 1, start_index + 1);
   }
 }
 
