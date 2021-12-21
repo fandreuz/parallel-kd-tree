@@ -20,6 +20,11 @@ public:
     // order of the array, therefore pointers do not point anymore to the
     // values we expected
     values = new data_type[dims];
+
+#ifdef DEBUG
+    std::cerr << "[Ctor]: datapoint.values address: " << values << std::endl;
+#endif
+
     std::memcpy(values, dt, dims * sizeof(data_type));
 
     data_dimension = dims;
@@ -30,6 +35,11 @@ public:
       data_type *vls = other.values;
       delete[] values;
       values = vls;
+
+#ifdef DEBUG
+      std::cerr << "[Move ctor]: datapoint.values address: " << values
+                << std::endl;
+#endif
 
       data_dimension = other.data_dimension;
 
@@ -43,6 +53,12 @@ public:
     data_dimension = other.data_dimension;
 
     values = new data_type[data_dimension];
+
+#ifdef DEBUG
+    std::cerr << "[Copy assignment]: datapoint.values address: " << values
+              << std::endl;
+#endif
+
     std::memcpy(values, other.values, data_dimension * sizeof(data_type));
 
     return *this;
@@ -62,7 +78,9 @@ public:
   data_type *data() { return values; }
 
   ~DataPoint() {
+#ifdef DEBUG
     std::cerr << "Deleting data point, value address: " << values << std::endl;
+#endif
     delete[] values;
     data_dimension = -1;
   }
