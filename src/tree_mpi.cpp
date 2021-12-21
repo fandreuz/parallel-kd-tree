@@ -167,6 +167,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
                 << std::endl;
 #endif
       serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
+      left_branch_sizes.push_back(size);
       build_tree_serial(array, size, depth, 0);
       return finalize();
     } else {
@@ -260,7 +261,7 @@ data_type *finalize() {
 #endif
 
   int right_rank = -1, right_branch_size = -1,
-      left_branch_size = left_branch_sizes.at(n_children - 1), split_idx = -1;
+      left_branch_size = left_branch_sizes.at(n_children), split_idx = -1;
   // buffer which contains the split indexes from the right branch
   data_type *right_branch_buffer = nullptr;
   data_type *left_branch_buffer = unpack_array(serial_splits, left_branch_size);
