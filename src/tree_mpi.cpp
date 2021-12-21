@@ -230,7 +230,8 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
 
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: serial split against axis " << dimension
-              << ", split_idx = " << split_point_idx << std::endl;
+              << ", split_idx = " << split_point_idx << ", size = " << size
+              << std::endl;
 #endif
 
     new (serial_splits + start_index)
@@ -252,6 +253,12 @@ data_type *finalize() {
 
   // we wait for all the child processes to complete their work
   int n_children = children.size();
+
+#ifdef DEBUG
+  std::cout << "[rank" << rank
+            << "]: finalize called. #children = " << n_children << std::endl;
+#endif
+
   int right_rank = -1, right_branch_size = -1,
       left_branch_size = left_branch_sizes.at(n_children - 1), split_idx = -1;
   // buffer which contains the split indexes from the right branch
