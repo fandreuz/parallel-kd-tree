@@ -1,5 +1,7 @@
 #include "tree_mpi.h"
 
+#include <unistd.h>
+
 #if !defined(DOUBLE_PRECISION)
 #define mpi_data_type MPI_FLOAT
 #define data_type float
@@ -54,6 +56,18 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   dims = dms;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+#ifdef MPI_DEBUG
+  if (rank == atoi(getenv("MPI_DEBUG_RANK"))) {
+    volatile int i = 0;
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    printf("PID %d on %s ready for attach\n", getpid(), hostname);
+    fflush(stdout);
+    while (0 == i)
+      sleep(5);
+  }
+#endif
 
   int n_processes;
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
