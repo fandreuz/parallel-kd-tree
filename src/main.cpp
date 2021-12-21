@@ -7,5 +7,5 @@ int main() {
     dt[i] = i * i - 2 * i;
   }
 
-  int *tree = generate_kd_tree(dt, 100, 2);
+  data_type *tree = generate_kd_tree(dt, 100, 2);
 }
