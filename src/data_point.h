@@ -1,5 +1,4 @@
 #include <cstring>
-#include <iostream>
 
 #if !defined(DOUBLE_PRECISION)
 #define mpi_data_type MPI_FLOAT
@@ -21,10 +20,6 @@ public:
     // values we expected
     values = new data_type[dims];
 
-#ifdef DEBUG
-    std::cerr << "[Ctor]: datapoint.values address: " << values << std::endl;
-#endif
-
     std::memcpy(values, dt, dims * sizeof(data_type));
 
     data_dimension = dims;
@@ -34,11 +29,6 @@ public:
   inline DataPoint(DataPoint &&other) {
     if (this != &other) {
       values = other.values;
-
-#ifdef DEBUG
-      std::cerr << "[Move ctor]: datapoint.values address: " << values
-                << std::endl;
-#endif
 
       data_dimension = other.data_dimension;
 
@@ -53,11 +43,6 @@ public:
       data_type *vls = other.values;
       delete[] values;
       values = vls;
-
-#ifdef DEBUG
-      std::cerr << "[Move assignment]: datapoint.values address: " << values
-                << std::endl;
-#endif
 
       data_dimension = other.data_dimension;
 
@@ -82,9 +67,6 @@ public:
   data_type *data() { return values; }
 
   ~DataPoint() {
-#ifdef DEBUG
-    std::cerr << "Deleting data point, value address: " << values << std::endl;
-#endif
     delete[] values;
     data_dimension = -1;
   }
