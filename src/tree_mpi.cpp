@@ -149,16 +149,6 @@ data_type *unpack_array(DataPoint *array, int size) {
     from 1
 */
 data_type *build_tree(DataPoint *array, int size, int depth) {
-  int dimension = select_splitting_dimension(depth);
-  int split_point_idx = sort_and_split(array, size, dimension);
-
-#ifdef DEBUG
-  std::cout << "[rank" << rank << "]: split against " << dimension
-            << ", split_idx = " << split_point_idx << std::endl;
-#endif
-
-  parallel_splits.push_back(split_point_idx);
-
   // we hit the bottom line
   if (size <= 1) {
 #ifdef DEBUG
@@ -172,19 +162,20 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
                 << "]: no available processes, going serial from now "
                 << std::endl;
 #endif
-
       serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
-
-      // starting index of the region of `serial_splits` dedicated to the right
-      // region
-      int right_region = size / 2;
-
-      // right
-      build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
-                        depth + 1, right_region);
-      // left
-      return build_tree_serial(array, split_point_idx, depth + 1, 0);
+      return build_tree_serial(array, size, depth, 0);
     } else {
+      int dimension = select_splitting_dimension(depth);
+      int split_point_idx = sort_and_split(array, size, dimension);
+
+#ifdef DEBUG
+      std::cout << "[rank" << rank << "]: parallel split against axis "
+                << dimension << ", split_idx = " << split_point_idx
+                << std::endl;
+#endif
+
+      parallel_splits.push_back(split_point_idx);
+
       int right_process_rank = rank + pow(2.0, max_depth - depth);
       int right_branch_size = size - split_point_idx - 1;
 
@@ -226,6 +217,11 @@ data_type *build_tree_serial(DataPoint *array, int size, int depth,
                              int start_index) {
   int dimension = 0;
   int split_point_idx = sort_and_split(array, size, dimension);
+
+#ifdef DEBUG
+  std::cout << "[rank" << rank << "]: serial split against axis " << dimension
+            << ", split_idx = " << split_point_idx << std::endl;
+#endif
 
   new (serial_splits + start_index)
       DataPoint(std::move(array[split_point_idx]));
