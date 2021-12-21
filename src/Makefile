@@ -1,11 +1,11 @@
 .DEFAULT_GOAL := compile
 
-compile: main.cpp tree_mpi.cpp
-	mpic++ -O3 -o tree_mpi tree_mpi.cpp main.cpp
+compile: main.cpp tree_mpi.cpp data_point.h
+	mpic++ -O3 -o tree_mpi data_point.h tree_mpi.cpp main.cpp
 
-debug: main.cpp tree_mpi.cpp
-	mpic++ -g -D DEBUG -o tree_mpi tree_mpi.cpp main.cpp
+debug: main.cpp tree_mpi.cpp data_point.h
+	mpic++ -g -D DEBUG -o tree_mpi data_point.h tree_mpi.cpp main.cpp
 
-mpidebug: main.cpp tree_mpi.cpp
+mpidebug: main.cpp tree_mpi.cpp data_point.h
 	export MPI_DEBUG_RANK="0"
-	mpic++ -g -D DEBUG -D MPI_DEBUG -o tree_mpi tree_mpi.cpp main.cpp
+	mpic++ -g -D DEBUG -D MPI_DEBUG -o tree_mpi data_point.h tree_mpi.cpp main.cpp
