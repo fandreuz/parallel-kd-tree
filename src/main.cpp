@@ -28,14 +28,16 @@ int main(int argc, char **argv) {
   delete[] dt;
 
   data_type *tree = generate_kd_tree(dt, SIZE, DIMS);
-  for (int i = 0; i < SIZE / DIMS; i++) {
-    std::cout << "(";
-    for (int j = 0; j < DIMS; j++) {
-      if (j > 0)
-        std::cout << ",";
-      std::cout << tree[i * DIMS + j];
+  if (rank == 0) {
+    for (int i = 0; i < SIZE / DIMS; i++) {
+      std::cout << "(";
+      for (int j = 0; j < DIMS; j++) {
+        if (j > 0)
+          std::cout << ",";
+        std::cout << tree[i * DIMS + j];
+      }
+      std::cout << ")";
     }
-    std::cout << ")";
   }
 
   MPI_Finalize();

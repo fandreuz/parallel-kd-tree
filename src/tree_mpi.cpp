@@ -21,8 +21,14 @@ int dims;
 // rank of this process
 int rank;
 
+// number of MPI processes
+int n_processes;
+
 // maximum process splitting available for the given number of MPI processes
 int max_depth;
+
+// n of processes such that rank > 2^max_depth
+int surplus_processes;
 
 // list of data point idxes in which this process splitted its branch.
 // this process then got assigned the left branch. note that this vector
@@ -71,10 +77,10 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   }
 #endif
 
-  int n_processes;
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
-  int max_depth = (int)log2(n_processes);
+  max_depth = (int)log2(n_processes);
+  surplus_processes = n_processes - (pow(2.0, (double)max_depth));
 #ifdef DEBUG
   if (rank == 0) {
     std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
@@ -84,7 +90,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   std::cout << "[rank" << rank << "]: started" << std::endl;
 #endif
 
-  int depth = 1;
+  int depth = 0;
   if (rank != 0) {
     MPI_Status status;
 
@@ -143,7 +149,7 @@ inline int sort_and_split(DataPoint *array, int size, int axis) {
   return (size / 2) * (size != 2);
 }
 
-inline int select_splitting_dimension(int depth) { return (depth - 1) % dims; }
+inline int select_splitting_dimension(int depth) { return depth % dims; }
 
 // transform the given DataPoint array in a 1D array such that `dims` contiguous
 // items constitute a data point
@@ -154,6 +160,10 @@ data_type *unpack_array(DataPoint *array, int size) {
     std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
   }
   return unpacked;
+}
+
+inline int next_process_rank(int next_depth) {
+  return rank + pow(2.0, max_depth - next_depth);
 }
 
 /*
@@ -167,7 +177,7 @@ data_type *unpack_array(DataPoint *array, int size) {
    - array is the set of values to be inserted into the tree.
    - size is the size of array
    - depth is the depth of a node created by a call to build_tree. depth starts
-    from 1
+    from 0
 */
 data_type *build_tree(DataPoint *array, int size, int depth) {
   // we hit the bottom line
@@ -175,14 +185,16 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
-    // we can call finalize() from there since per each process there is goint
+    // we can call finalize() from there since per each process there is going
     // to be only one "active" call to build_tree (the parent recursive calls
     // are inactive in the sense that as soon as the children build_tree()
     // returns they are going to return too).
     parallel_splits.push_back(std::move(array[0]));
     return finalize();
   } else {
-    if (depth > max_depth) {
+    int next_depth = depth + 1;
+
+    if (next_depth > max_depth + 1) {
 #ifdef DEBUG
       std::cout << "[rank" << rank
                 << "]: no available processes, going serial from now "
@@ -204,7 +216,10 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
 
       parallel_splits.push_back(std::move(array[split_point_idx]));
 
-      int right_process_rank = rank + pow(2.0, max_depth - depth);
+      int right_process_rank =
+          (next_depth < max_depth + 1) * next_process_rank(next_depth) +
+          (next_depth == max_depth + 1) * (rank < surplus_processes) *
+              (n_processes - surplus_processes + rank);
       int right_branch_size = size - split_point_idx - 1;
 
 #ifdef DEBUG
@@ -214,6 +229,13 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
                 << " of " << size << ") to rank" << right_process_rank
                 << std::endl;
 #endif
+
+      int right_branch_data[3];
+      right_branch_data[0] = right_branch_size;
+      right_branch_data[1] = next_depth;
+      right_branch_data[2] = rank;
+      MPI_Send(right_branch_data, 3, MPI_INT, right_process_rank, 0,
+               MPI_COMM_WORLD);
 
       data_type *right_branch =
           unpack_array(array + split_point_idx + 1, right_branch_size);
@@ -229,7 +251,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
       left_branch_sizes.push_back(split_point_idx);
 
       // this process takes care of the left part
-      return build_tree(array, split_point_idx, depth + 1);
+      return build_tree(array, split_point_idx, next_depth);
     }
   }
 }
@@ -273,9 +295,6 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
 }
 
 data_type *finalize() {
-  if (!serial_splits)
-    return nullptr;
-
   // we wait for all the child processes to complete their work
   int n_children = children.size();
 

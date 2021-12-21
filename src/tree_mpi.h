@@ -18,6 +18,11 @@ extern int dims;
 // rank of this process
 extern int rank;
 
+// number of MPI processes
+extern int rank;
+
+extern int surplus_processes;
+
 // maximum process splitting available for the given number of MPI processes
 extern int max_depth;
 
