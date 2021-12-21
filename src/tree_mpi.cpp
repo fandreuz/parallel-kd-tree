@@ -130,7 +130,7 @@ int select_splitting_dimension(int depth) { return (depth - 1) % dims; }
 data_type *unpack_array(DataPoint *array, int size) {
   data_type *unpacked = new data_type[size * dims];
   for (int i = 0; i < size; i++) {
-    std::memcpy(unpacked + i * dims, array[i].data(), dims * sizeof(int));
+    std::memcpy(unpacked + i * dims, array[i].data(), dims * sizeof(data_type));
   }
   return unpacked;
 }
