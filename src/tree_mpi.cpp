@@ -116,8 +116,10 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   // we create an array which packs all the data in a convenient way.
   // this weird mechanic is needed because we do not want to call the default
   // constructor (which the plain 'new' does)
-  DataPoint *array = (DataPoint *)::operator new(size * sizeof(DataPoint));
-  for (int i = 0; i < size; i++) {
+  int data_point_arr_size = (int)(size / dims);
+  DataPoint *array =
+      (DataPoint *)::operator new(data_point_arr_size * sizeof(DataPoint));
+  for (int i = 0; i < data_point_arr_size; i++) {
     new (array + i) DataPoint(data + i * dims, dims);
   }
 
@@ -127,7 +129,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
             << std::endl;
 #endif
 
-  return build_tree(array, size, depth);
+  return build_tree(array, data_point_arr_size, depth);
 }
 
 // sort the given array such that the element in the middle is exactly the
