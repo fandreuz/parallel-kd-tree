@@ -58,7 +58,9 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 #ifdef MPI_DEBUG
-  if (rank == atoi(getenv("MPI_DEBUG_RANK"))) {
+  int debug_rank = atoi(getenv("MPI_DEBUG_RANK"));
+  std::cerr << "MPI_DEBUG_RANK=" << atoi(getenv("MPI_DEBUG_RANK")) << std::endl;
+  if (rank == debug_rank) {
     volatile int i = 0;
     char hostname[256];
     gethostname(hostname, sizeof(hostname));
