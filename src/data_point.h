@@ -30,11 +30,10 @@ public:
     data_dimension = dims;
   }
 
+  // move constructor
   inline DataPoint(DataPoint &&other) {
     if (this != &other) {
-      data_type *vls = other.values;
-      delete[] values;
-      values = vls;
+      values = other.values;
 
 #ifdef DEBUG
       std::cerr << "[Move ctor]: datapoint.values address: " << values
@@ -46,6 +45,27 @@ public:
       other.values = nullptr;
       other.data_dimension = -1;
     }
+  }
+
+  // move assignment
+  DataPoint &operator=(DataPoint &&other) {
+    if (this != &other) {
+      data_type *vls = other.values;
+      delete[] values;
+      values = vls;
+
+#ifdef DEBUG
+      std::cerr << "[Move assignment]: datapoint.values address: " << values
+                << std::endl;
+#endif
+
+      data_dimension = other.data_dimension;
+
+      other.values = nullptr;
+      other.data_dimension = -1;
+    }
+
+    return *this;
   }
 
   // copy assignment
