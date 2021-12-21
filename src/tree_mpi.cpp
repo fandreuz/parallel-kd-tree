@@ -259,7 +259,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
     new (serial_splits + start_index)
         DataPoint(std::move(array[split_point_idx]));
 
-    int right_region = start_index + size / 2;
+    int right_region = start_index + size / 2 + size % 2;
 
     // right
     build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
