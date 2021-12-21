@@ -135,13 +135,15 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
 // sort the given array such that the element in the middle is exactly the
 // median with respect to the given axis, and all the items before and
 // after are respectively lower/greater than that item.
-int sort_and_split(DataPoint *array, int size, int axis) {
+inline int sort_and_split(DataPoint *array, int size, int axis) {
   std::nth_element(array, array + size / 2, array + size,
                    DataPointCompare(axis));
-  return size / 2;
+  // if size is 2 we want to return the first element (the smallest one), since
+  // it will be placed into the first empty spot in serial_split
+  return (size / 2) * (size != 2);
 }
 
-int select_splitting_dimension(int depth) { return (depth - 1) % dims; }
+inline int select_splitting_dimension(int depth) { return (depth - 1) % dims; }
 
 // transform the given DataPoint array in a 1D array such that `dims` contiguous
 // items constitute a data point
