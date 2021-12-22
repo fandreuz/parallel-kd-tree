@@ -340,7 +340,7 @@ data_type *finalize() {
     // the root of this tree is the data point used to split left and right
     std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
 
-    for (int dpth = 0; dpth < (int)log2(left_branch_size); ++dpth) {
+    for (int dpth = 1; dpth <= (int)log2(left_branch_size) + 1; ++dpth) {
       // number of nodes at the current level in the left/right subtree
       int n_of_nodes = pow(2.0, (double)dpth - 1);
 
