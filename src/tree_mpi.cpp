@@ -46,7 +46,6 @@ std::vector<int> children;
 // for each child, the size of the branch assigned to that child. used in
 // finalize to know what to expect from my children
 std::vector<int> right_branch_sizes;
-std::vector<int> left_branch_sizes;
 
 /*
   Generate a kd tree from the given data. If this process is not the main
@@ -187,11 +186,16 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
+    if (size > 0) {
+      serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
+      serial_branch_size = size;
+
+      build_tree_serial(array, size, depth, 0);
+    }
     // we can call finalize() from there since per each process there is going
     // to be only one "active" call to build_tree (the parent recursive calls
     // are inactive in the sense that as soon as the children build_tree()
     // returns they are going to return too).
-    parallel_splits.push_back(std::move(array[0]));
     return finalize();
   } else {
     int next_depth = depth + 1;
@@ -270,7 +274,6 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
     serial_splits[start_index] = std::move(array[0]);
-    return;
   } else {
     int dimension = select_splitting_dimension(depth);
     int split_point_idx = sort_and_split(array, size, dimension);
@@ -309,6 +312,7 @@ data_type *finalize() {
   data_type *right_branch_buffer = nullptr;
 
   data_type *left_branch_buffer = nullptr;
+  int left_branch_size = serial_branch_size;
 
   if (serial_branch_size > 0) {
     // we load the left branch corresponding to the last serial split
@@ -318,10 +322,9 @@ data_type *finalize() {
   // merged_array contains the values which results from merging a right branch
   // with a left branch.
   data_type *merging_array;
-  for (int i = n_children - 1; i > 0; --i) {
+  for (int i = n_children - 1; i >= 0; --i) {
     right_rank = children.at(i);
     right_branch_size = right_branch_sizes.at(i);
-    left_branch_size = left_branch_sizes.at(i);
     DataPoint split_item = std::move(parallel_splits.at(i));
 
     merging_array =
@@ -354,16 +357,21 @@ data_type *finalize() {
     // represents the left branch buffer
     left_branch_buffer = merging_array;
 
-    if (parent != -1) {
-      // we finished merging left and right parallel subtrees, we can contact
-      // the parent and transfer the data
-      MPI_Send(left_branch_buffer,
-               (right_branch_size + left_branch_size + 1) * dims, mpi_data_type,
-               parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
-      delete[] left_branch_buffer;
-      return nullptr;
-    } else {
-      // this is the root process
-      return left_branch_buffer;
-    }
+    // the new size of the left branch is the sum of the former left branch size
+    // and of the right branch size, plus 1 (the split point)
+    left_branch_size += right_branch_size + 1;
   }
+
+  if (parent != -1) {
+    // we finished merging left and right parallel subtrees, we can contact
+    // the parent and transfer the data
+    MPI_Send(left_branch_buffer,
+             (right_branch_size + left_branch_size + 1) * dims, mpi_data_type,
+             parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
+    delete[] left_branch_buffer;
+    return nullptr;
+  } else {
+    // this is the root process
+    return left_branch_buffer;
+  }
+}

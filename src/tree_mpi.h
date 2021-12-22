@@ -42,7 +42,6 @@ extern std::vector<int> children;
 // for each child, the size of the branch assigned to that child. used in
 // finalize to know what to expect from my children
 extern std::vector<int> right_branch_sizes;
-extern std::vector<int> left_branch_sizes;
 
 data_type *generate_kd_tree(data_type *data, int size, int dms);
 data_type *build_tree(DataPoint *array, int size, int depth);
