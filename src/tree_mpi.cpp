@@ -25,7 +25,7 @@ int rank;
 int n_processes;
 
 // maximum process splitting available for the given number of MPI processes
-int max_depth;
+int max_depth = 0;
 
 // n of processes such that rank > 2^max_depth
 int surplus_processes;
@@ -80,7 +80,15 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
-  max_depth = (int)log2(n_processes);
+  int procs = n_processes;
+  int nodes_per_level = 1;
+  int dpth = -1;
+  while (procs >= nodes_per_level) {
+    dpth++;
+    procs -= nodes_per_level;
+    nodes_per_level *= 2;
+  }
+  max_depth = dpth;
   surplus_processes = n_processes - (int)pow(2.0, (double)max_depth);
 #ifdef DEBUG
   if (rank == 0) {
@@ -200,7 +208,8 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
   } else {
     int next_depth = depth + 1;
 
-    if (next_depth > max_depth + 1 && rank >= surplus_processes) {
+    if (next_depth > max_depth + 1 ||
+        (next_depth == max_depth + 1 && rank >= surplus_processes)) {
 #ifdef DEBUG
       std::cout << "[rank" << rank
                 << "]: no available processes, going serial from now "
