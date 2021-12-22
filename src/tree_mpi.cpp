@@ -104,9 +104,8 @@ data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
-  int temp = smaller_powersum_of_two(n_processes);
-  max_depth = log2((double)temp);
-  surplus_processes = n_processes - temp;
+  max_depth = log2((double) n_processes);
+  surplus_processes = n_processes - (int) pow(2.0, (double) max_depth);
 #ifdef DEBUG
   if (rank == 0) {
     std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
