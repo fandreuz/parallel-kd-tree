@@ -336,16 +336,21 @@ data_type *finalize() {
     // the root of this tree is the data point used to split left and right
     std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
 
+    // we already added the splitting point
+    int already_added = 1;
     for (int dpth = 1; dpth <= (int)log2(left_branch_size) + 1; ++dpth) {
       // number of nodes at the current level in the left/right subtree
-      int n_of_nodes = pow(2.0, (double)dpth - 1);
+      int n_of_nodes = pow(2.0, (double)(dpth - 1));
 
       // we put into the three what's inside the left subtree
-      std::memcpy(merging_array + dims, left_branch_buffer,
+      std::memcpy(merging_array + already_added * dims, left_branch_buffer,
                   n_of_nodes * dims * sizeof(data_type));
       // we put into the three what's inside the right subtree
-      std::memcpy(merging_array + (n_of_nodes + 1) * dims, right_branch_buffer,
-                  n_of_nodes * dims * sizeof(data_type));
+      std::memcpy(merging_array + (n_of_nodes + already_added) * dims,
+                  right_branch_buffer, n_of_nodes * dims * sizeof(data_type));
+
+      // we just added left and right branch
+      already_added += n_of_nodes * 2;
     }
 
     delete[] right_branch_buffer;
