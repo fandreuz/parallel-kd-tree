@@ -400,8 +400,7 @@ data_type *finalize(int *new_size) {
     // the parent and transfer the data
 
     // first of all the number of data points transmitted
-    int n_of_data = left_branch_size * dims;
-    MPI_Send(&n_of_data, 1, MPI_INT, parent, TAG_RIGHT_PROCESS_N_ITEMS,
+    MPI_Send(&left_branch_size, 1, MPI_INT, parent, TAG_RIGHT_PROCESS_N_ITEMS,
              MPI_COMM_WORLD);
 
     MPI_Send(left_branch_buffer, left_branch_size * dims, mpi_data_type, parent,
