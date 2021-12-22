@@ -112,7 +112,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
     // number of data points in the branch
     size = br_size_depth_parent[0];
     // depth of the tree at this point
-    int depth = br_size_depth_parent[1];
+    depth = br_size_depth_parent[1];
     // rank of the parent which "started" (i.e. waked) this process
     parent = br_size_depth_parent[2];
 
