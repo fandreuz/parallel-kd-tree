@@ -81,7 +81,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
   max_depth = (int)log2(n_processes);
-  surplus_processes = n_processes - (pow(2.0, (double)max_depth));
+  surplus_processes = n_processes - (int)pow(2.0, (double)max_depth);
 #ifdef DEBUG
   if (rank == 0) {
     std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
@@ -200,7 +200,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
   } else {
     int next_depth = depth + 1;
 
-    if (next_depth > max_depth + 1) {
+    if (next_depth > max_depth + 1 && rank >= surplus_processes) {
 #ifdef DEBUG
       std::cout << "[rank" << rank
                 << "]: no available processes, going serial from now "
