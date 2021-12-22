@@ -338,7 +338,7 @@ data_type *finalize() {
              TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD, &status);
 
     // the root of this tree is the data point used to split left and right
-    std::memcpy(merging_array, split_item.data(), dims);
+    std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
 
     for (int dpth = 0; dpth < (int)log2(left_branch_size); ++dpth) {
       // number of nodes at the current level in the left/right subtree
