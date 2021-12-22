@@ -1,7 +1,7 @@
 #include "tree_mpi.h"
 #include <iostream>
 
-#define SIZE 6
+#define SIZE 3
 #define DIMS 2
 
 void print(data_type *tree);
@@ -14,9 +14,9 @@ int main(int argc, char **argv) {
 
   data_type *dt = nullptr;
   if (rank == 0) {
-    dt = new data_type[SIZE];
+    dt = new data_type[SIZE*DIMS];
 
-    for (int i = 0; i < SIZE; i++) {
+    for (int i = 0; i < SIZE*DIMS; i++) {
       dt[i] = i * i - 2 * i;
 
 #ifdef DEBUG
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 
   data_type *tree = generate_kd_tree(dt, SIZE, DIMS);
   if (rank == 0) {
-    for (int i = 0; i < SIZE / DIMS; i++) {
+    for (int i = 0; i < SIZE; i++) {
       std::cout << "(";
       for (int j = 0; j < DIMS; j++) {
         if (j > 0)
