@@ -190,84 +190,70 @@ inline int next_process_rank(int next_depth) {
     from 0
 */
 data_type *build_tree(DataPoint *array, int size, int depth) {
-  // we hit the bottom line
-  if (size <= 1) {
+  int next_depth = depth + 1;
+
+  if (size <= 1 || next_depth > max_depth + 1 ||
+      (next_depth == max_depth + 1 && rank >= surplus_processes)) {
 #ifdef DEBUG
-    std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
+    if (size <= 1)
+      std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
+    else {
+      std::cout << "[rank" << rank
+                << "]: no available processes, going serial from now "
+                << std::endl;
+    }
 #endif
     if (size > 0) {
       serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
       serial_branch_size = size;
-
       build_tree_serial(array, size, depth, 0);
     }
-    // we can call finalize() from there since per each process there is going
-    // to be only one "active" call to build_tree (the parent recursive calls
-    // are inactive in the sense that as soon as the children build_tree()
-    // returns they are going to return too).
     return finalize();
   } else {
-    int next_depth = depth + 1;
-
-    if (next_depth > max_depth + 1 ||
-        (next_depth == max_depth + 1 && rank >= surplus_processes)) {
-#ifdef DEBUG
-      std::cout << "[rank" << rank
-                << "]: no available processes, going serial from now "
-                << std::endl;
-#endif
-      serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
-      serial_branch_size = size;
-      build_tree_serial(array, size, depth, 0);
-      return finalize();
-    } else {
-      int dimension = select_splitting_dimension(depth);
-      int split_point_idx = sort_and_split(array, size, dimension);
+    int dimension = select_splitting_dimension(depth);
+    int split_point_idx = sort_and_split(array, size, dimension);
 
 #ifdef DEBUG
-      std::cout << "[rank" << rank << "]: parallel split against axis "
-                << dimension << ", split_idx = " << split_point_idx
-                << std::endl;
+    std::cout << "[rank" << rank << "]: parallel split against axis "
+              << dimension << ", split_idx = " << split_point_idx << std::endl;
 #endif
 
-      parallel_splits.push_back(std::move(array[split_point_idx]));
+    parallel_splits.push_back(std::move(array[split_point_idx]));
 
-      int right_process_rank =
-          (next_depth < max_depth + 1) * next_process_rank(next_depth) +
-          (next_depth == max_depth + 1) * (rank < surplus_processes) *
-              (n_processes - surplus_processes + rank);
-      int right_branch_size = size - split_point_idx - 1;
+    int right_process_rank =
+        (next_depth < max_depth + 1) * next_process_rank(next_depth) +
+        (next_depth == max_depth + 1) * (rank < surplus_processes) *
+            (n_processes - surplus_processes + rank);
+    int right_branch_size = size - split_point_idx - 1;
 
 #ifdef DEBUG
-      std::cout << "[rank" << rank
-                << "]: delegating right region (starting from) "
-                << split_point_idx + 1 << " (size " << right_branch_size
-                << " of " << size << ") to rank" << right_process_rank
-                << std::endl;
+    std::cout << "[rank" << rank
+              << "]: delegating right region (starting from) "
+              << split_point_idx + 1 << " (size " << right_branch_size << " of "
+              << size << ") to rank" << right_process_rank << std::endl;
 #endif
 
-      int right_branch_data[3];
-      right_branch_data[0] = right_branch_size;
-      right_branch_data[1] = next_depth;
-      right_branch_data[2] = rank;
-      MPI_Send(right_branch_data, 3, MPI_INT, right_process_rank, 0,
-               MPI_COMM_WORLD);
+    int right_branch_data[3];
+    right_branch_data[0] = right_branch_size;
+    right_branch_data[1] = next_depth;
+    right_branch_data[2] = rank;
+    MPI_Send(right_branch_data, 3, MPI_INT, right_process_rank, 0,
+             MPI_COMM_WORLD);
 
-      data_type *right_branch =
-          unpack_array(array + split_point_idx + 1, right_branch_size);
+    data_type *right_branch =
+        unpack_array(array + split_point_idx + 1, right_branch_size);
 
-      // we delegate the right part to another process
-      // this is synchronous since we also want to delete the buffer ASAP
-      MPI_Send(right_branch, right_branch_size * dims, mpi_data_type,
-               right_process_rank, 0, MPI_COMM_WORLD);
-      delete[] right_branch;
+    // we delegate the right part to another process
+    // this is synchronous since we also want to delete the buffer ASAP
+    MPI_Send(right_branch, right_branch_size * dims, mpi_data_type,
+             right_process_rank, 0, MPI_COMM_WORLD);
+    delete[] right_branch;
 
-      children.push_back(right_process_rank);
-      right_branch_sizes.push_back(right_branch_size);
+    children.push_back(right_process_rank);
+    right_branch_sizes.push_back(right_branch_size);
 
-      // this process takes care of the left part
-      return build_tree(array, split_point_idx, next_depth);
-    }
+    // this process takes care of the left part
+    return build_tree(array, split_point_idx, next_depth);
   }
 }
 
