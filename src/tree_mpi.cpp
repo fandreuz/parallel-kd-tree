@@ -369,19 +369,28 @@ data_type *finalize(int *new_size) {
 
     // we already added the splitting point
     int already_added = 1;
-    for (int dpth = 1; dpth <= (int)log2(left_branch_size) + 1; ++dpth) {
-      // number of nodes at the current level in the left/right subtree
-      int n_of_nodes = pow(2.0, (double)(dpth - 1));
-
+    // number of nodes in each branch (left and right)at the current level of
+    // the tree
+    int nodes = 1;
+    // index of left(right)_branch_buffer from which we start memcpying
+    int start_index = 0;
+    while (already_added <= right_branch_size + left_branch_size + 1) {
       // we put into the three what's inside the left subtree
-      std::memcpy(merging_array + already_added * dims, left_branch_buffer,
-                  n_of_nodes * dims * sizeof(data_type));
+      std::memcpy(merging_array + already_added * dims,
+                  left_branch_buffer + start_index,
+                  nodes * dims * sizeof(data_type));
       // we put into the three what's inside the right subtree
-      std::memcpy(merging_array + (n_of_nodes + already_added) * dims,
-                  right_branch_buffer, n_of_nodes * dims * sizeof(data_type));
+      std::memcpy(merging_array + (nodes + already_added) * dims,
+                  right_branch_buffer + start_index,
+                  nodes * dims * sizeof(data_type));
 
+      // the next iteration we're going to start in a different position of
+      // left(right)_branch_buffer
+      start_index += nodes * dims;
       // we just added left and right branch
-      already_added += n_of_nodes * 2;
+      already_added += nodes * 2;
+      // the next level will have twice the number of nodes of the current level
+      nodes *= 2;
     }
 
     delete[] right_branch_buffer;
