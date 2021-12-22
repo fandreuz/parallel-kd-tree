@@ -184,7 +184,8 @@ data_type *unpack_array(DataPoint *array, int size) {
   data_type *unpacked = new data_type[size * dims];
   for (int i = 0; i < size; ++i) {
     data_type *d = array[i].data();
-    if(d) std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
+    if (d)
+      std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
     else {
       for (int j = 0; j < dims; ++j) {
         unpacked[i * dims + j] = EMPTY_PLACEHOLDER;
@@ -397,6 +398,12 @@ data_type *finalize() {
   if (parent != -1) {
     // we finished merging left and right parallel subtrees, we can contact
     // the parent and transfer the data
+
+    // first of all the number of data points transmitted
+    int n_of_data = left_branch_size * dims;
+    MPI_Send(&n_of_data, 1, MPI_INT, parent, TAG_RIGHT_PROCESS_N_ITEMS,
+             MPI_COMM_WORLD);
+
     MPI_Send(left_branch_buffer, left_branch_size * dims, mpi_data_type, parent,
              TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
     delete[] left_branch_buffer;
