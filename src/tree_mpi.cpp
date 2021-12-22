@@ -11,6 +11,7 @@
 #endif
 
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
+#define TAG_RIGHT_PROCESS_N_ITEMS 11
 
 // holds the rank of whoever called this process
 int parent = -1;
@@ -43,9 +44,6 @@ DataPoint *serial_splits;
 
 // list of processes started by this process
 std::vector<int> children;
-// for each child, the size of the branch assigned to that child. used in
-// finalize to know what to expect from my children
-std::vector<int> right_branch_sizes;
 
 /* return the nearest number N such that N > n and N is a sum of powers of two
    Example:
@@ -271,7 +269,6 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
     delete[] right_branch;
 
     children.push_back(right_process_rank);
-    right_branch_sizes.push_back(right_branch_size);
 
     // this process takes care of the left part
     return build_tree(array, split_point_idx, next_depth);
@@ -344,7 +341,11 @@ data_type *finalize() {
   data_type *merging_array;
   for (int i = n_children - 1; i >= 0; --i) {
     right_rank = children.at(i);
-    right_branch_size = right_branch_sizes.at(i);
+
+    MPI_Status status;
+    MPI_Recv(&right_branch_size, 1, MPI_INT, right_rank,
+             TAG_RIGHT_PROCESS_N_ITEMS, MPI_COMM_WORLD, &status);
+
     DataPoint split_item = std::move(parallel_splits.at(i));
 
     merging_array =
@@ -352,7 +353,6 @@ data_type *finalize() {
     right_branch_buffer = new data_type[right_branch_size * dims];
 
     // we gather the branch from another process
-    MPI_Status status;
     MPI_Recv(right_branch_buffer, right_branch_size * dims, mpi_data_type,
              right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD,
              &status);
