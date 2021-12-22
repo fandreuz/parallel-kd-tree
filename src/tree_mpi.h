@@ -26,6 +26,8 @@ extern int surplus_processes;
 // maximum process splitting available for the given number of MPI processes
 extern int max_depth;
 
+extern int serial_branch_size;
+
 // list of data point idxes in which this process splitted its branch.
 // this process then got assigned the left branch. note that this vector
 // contains only "parallel" splits, serial splits are handled otherwise.

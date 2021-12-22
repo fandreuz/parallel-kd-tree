@@ -30,6 +30,8 @@ int max_depth;
 // n of processes such that rank > 2^max_depth
 int surplus_processes;
 
+int serial_branch_size = 0;
+
 // list of data point idxes in which this process splitted its branch.
 // this process then got assigned the left branch. note that this vector
 // contains only "parallel" splits, serial splits are handled otherwise.
@@ -201,7 +203,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
                 << std::endl;
 #endif
       serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
-      left_branch_sizes.push_back(size);
+      serial_branch_size = size;
       build_tree_serial(array, size, depth, 0);
       return finalize();
     } else {
@@ -248,7 +250,6 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
 
       children.push_back(right_process_rank);
       right_branch_sizes.push_back(right_branch_size);
-      left_branch_sizes.push_back(split_point_idx);
 
       // this process takes care of the left part
       return build_tree(array, split_point_idx, next_depth);
@@ -303,12 +304,16 @@ data_type *finalize() {
             << "]: finalize called. #children = " << n_children << std::endl;
 #endif
 
-  int right_rank = -1, right_branch_size = -1,
-      left_branch_size = left_branch_sizes.at(n_children);
+  int right_rank = -1, right_branch_size = -1;
   // buffer which contains the split indexes from the right branch
   data_type *right_branch_buffer = nullptr;
-  data_type *left_branch_buffer = unpack_array(serial_splits, left_branch_size);
-  serial_splits = nullptr;
+
+  data_type *left_branch_buffer = nullptr;
+
+  if (serial_branch_size > 0) {
+    // we load the left branch corresponding to the last serial split
+    left_branch_buffer = unpack_array(serial_splits, serial_branch_size);
+  }
 
   // merged_array contains the values which results from merging a right branch
   // with a left branch.
@@ -323,6 +328,7 @@ data_type *finalize() {
         new data_type[(right_branch_size + left_branch_size + 1) * dims];
     right_branch_buffer = new data_type[right_branch_size * dims];
 
+    // we gather the branch from another process
     MPI_Status status;
     MPI_Recv(right_branch_buffer, right_branch_size, mpi_data_type, right_rank,
              TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD, &status);
@@ -347,18 +353,17 @@ data_type *finalize() {
     // we go one level up, therefore the merging array is now the array that
     // represents the left branch buffer
     left_branch_buffer = merging_array;
-  }
 
-  if (parent != -1) {
-    // we finished merging left and right parallel subtrees, we can contact the
-    // parent and transfer the data
-    MPI_Send(left_branch_buffer,
-             (right_branch_size + left_branch_size + 1) * dims, mpi_data_type,
-             parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
-    delete[] left_branch_buffer;
-    return nullptr;
-  } else {
-    // this is the root process
-    return left_branch_buffer;
+    if (parent != -1) {
+      // we finished merging left and right parallel subtrees, we can contact
+      // the parent and transfer the data
+      MPI_Send(left_branch_buffer,
+               (right_branch_size + left_branch_size + 1) * dims, mpi_data_type,
+               parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
+      delete[] left_branch_buffer;
+      return nullptr;
+    } else {
+      // this is the root process
+      return left_branch_buffer;
+    }
   }
-}
