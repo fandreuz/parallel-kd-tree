@@ -374,7 +374,7 @@ data_type *finalize(int *new_size) {
     int nodes = 1;
     // index of left(right)_branch_buffer from which we start memcpying
     int start_index = 0;
-    while (already_added <= right_branch_size + left_branch_size + 1) {
+    while (already_added < right_branch_size + left_branch_size + 1) {
       // we put into the three what's inside the left subtree
       std::memcpy(merging_array + already_added * dims,
                   left_branch_buffer + start_index,
