@@ -26,7 +26,10 @@ int main(int argc, char **argv) {
   }
 
   data_type *tree = generate_kd_tree(dt, SIZE, DIMS);
-  if (rank == 0) {
+  int next_powersum = 1;
+  int current_multiplier = 1;
+  if (rank == 0)
+  {
     for (int i = 0; i < SIZE; i++) {
       std::cout << "(";
       for (int j = 0; j < DIMS; j++) {
@@ -35,6 +38,12 @@ int main(int argc, char **argv) {
         std::cout << tree[i * DIMS + j];
       }
       std::cout << ")";
+
+      if(i + 1 == next_powersum) {
+        std::cout << "--";
+        current_multiplier *= 2;
+        next_powersum += current_multiplier;
+      }
     }
   }
 
