@@ -104,8 +104,8 @@ data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
-  max_depth = log2((double) n_processes);
-  surplus_processes = n_processes - (int) pow(2.0, (double) max_depth);
+  max_depth = log2((double)n_processes);
+  surplus_processes = n_processes - (int)pow(2.0, (double)max_depth);
 #ifdef DEBUG
   if (rank == 0) {
     std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
@@ -127,6 +127,11 @@ data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
 
     // number of data points in the branch
     size = br_size_depth_parent[0];
+    if(size == 0) {
+      // a process warned this process that there is no work to perform
+      return nullptr;
+    }
+
     // depth of the tree at this point
     depth = br_size_depth_parent[1];
     // rank of the parent which "started" (i.e. waked) this process
@@ -233,6 +238,18 @@ void build_tree(DataPoint *array, int size, int depth) {
       serial_splits =
           (DataPoint *)::operator new(serial_branch_size * sizeof(DataPoint));
       build_tree_serial(array, size, depth, 0);
+    }
+
+    // this process should have called a surplus process to do some stuff, but
+    // since we have only one or less items in the buffer we could not call
+    // anyone. however we need to wake that process to avoid deadlock
+    if (size <= 1 && next_depth == max_depth + 1 && rank < surplus_processes) {
+      int right_process_rank = n_processes - surplus_processes + rank;
+
+      int right_branch_data[3];
+      right_branch_data[0] = 0;
+      MPI_Send(right_branch_data, 3, MPI_INT, right_process_rank, 0,
+               MPI_COMM_WORLD);
     }
   } else {
     int dimension = select_splitting_dimension(depth);
