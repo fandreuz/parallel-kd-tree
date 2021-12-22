@@ -12,6 +12,7 @@
 
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
 #define TAG_RIGHT_PROCESS_N_ITEMS 11
+#define EMPTY_PLACEHOLDER 0.0
 
 // holds the rank of whoever called this process
 int parent = -1;
@@ -181,9 +182,14 @@ inline int select_splitting_dimension(int depth) { return depth % dims; }
 // items constitute a data point
 data_type *unpack_array(DataPoint *array, int size) {
   data_type *unpacked = new data_type[size * dims];
-  for (int i = 0; i < size; i++) {
+  for (int i = 0; i < size; ++i) {
     data_type *d = array[i].data();
-    std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
+    if(d) std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
+    else {
+      for (int j = 0; j < dims; ++j) {
+        unpacked[i * dims + j] = EMPTY_PLACEHOLDER;
+      }
+    }
   }
   return unpacked;
 }
