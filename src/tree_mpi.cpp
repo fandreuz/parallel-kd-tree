@@ -273,7 +273,8 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
-    serial_splits[start_index] = std::move(array[0]);
+    new (serial_splits + start_index)
+        DataPoint(std::move(array[0]));
   } else {
     int dimension = select_splitting_dimension(depth);
     int split_point_idx = sort_and_split(array, size, dimension);
