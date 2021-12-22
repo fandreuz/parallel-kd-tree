@@ -304,14 +304,17 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
     new (serial_splits + start_index)
         DataPoint(std::move(array[split_point_idx]));
 
-    int right_region = start_index + (serial_branch_size - start_index) / 2;
+    // we can start writing the left region immediately after the cell in which
+    // we wrote the split point
+    int left_region = start_index + 1;
+    int right_region = left_region + (serial_branch_size - left_region) / 2;
 
     // right
     build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
                       depth + 1, right_region);
     // left
     if (split_point_idx > 0)
-      build_tree_serial(array, split_point_idx, depth + 1, start_index + 1);
+      build_tree_serial(array, split_point_idx, depth + 1, left_region);
   }
 }
 
