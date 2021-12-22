@@ -125,8 +125,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   // we create an array which packs all the data in a convenient way.
   // this weird mechanic is needed because we do not want to call the default
   // constructor (which the plain 'new' does)
-  DataPoint *array =
-      (DataPoint *)::operator new(size * sizeof(DataPoint));
+  DataPoint *array = (DataPoint *)::operator new(size * sizeof(DataPoint));
   for (int i = 0; i < size; i++) {
     new (array + i) DataPoint(data + i * dims, dims);
   }
@@ -274,8 +273,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
-    new (serial_splits + start_index)
-        DataPoint(std::move(array[0]));
+    new (serial_splits + start_index) DataPoint(std::move(array[0]));
   } else {
     int dimension = select_splitting_dimension(depth);
     int split_point_idx = sort_and_split(array, size, dimension);
@@ -335,8 +333,9 @@ data_type *finalize() {
 
     // we gather the branch from another process
     MPI_Status status;
-    MPI_Recv(right_branch_buffer, right_branch_size, mpi_data_type, right_rank,
-             TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD, &status);
+    MPI_Recv(right_branch_buffer, right_branch_size * dims, mpi_data_type,
+             right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD,
+             &status);
 
     // the root of this tree is the data point used to split left and right
     std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
@@ -367,9 +366,8 @@ data_type *finalize() {
   if (parent != -1) {
     // we finished merging left and right parallel subtrees, we can contact
     // the parent and transfer the data
-    MPI_Send(left_branch_buffer,
-             (right_branch_size + left_branch_size + 1) * dims, mpi_data_type,
-             parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
+    MPI_Send(left_branch_buffer, left_branch_size * dims, mpi_data_type, parent,
+             TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
     delete[] left_branch_buffer;
     return nullptr;
   } else {
