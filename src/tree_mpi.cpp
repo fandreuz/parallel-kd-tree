@@ -248,7 +248,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
 
       // we delegate the right part to another process
       // this is synchronous since we also want to delete the buffer ASAP
-      MPI_Send(right_branch, right_branch_size, mpi_data_type,
+      MPI_Send(right_branch, right_branch_size * dims, mpi_data_type,
                right_process_rank, 0, MPI_COMM_WORLD);
       delete[] right_branch;
 
