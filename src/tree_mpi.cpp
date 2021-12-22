@@ -47,6 +47,31 @@ std::vector<int> children;
 // finalize to know what to expect from my children
 std::vector<int> right_branch_sizes;
 
+/* return the nearest number N such that N > n and N is a sum of powers of two
+   Example:
+    5 -> 7 = 1 + 2 + 4
+    3 -> 3 = 1 + 2
+*/
+inline int bigger_powersum_of_two(int n) {
+  int base = 1;
+  int N = 0;
+  while (N < n) {
+    N += base;
+    base *= 2;
+  }
+  return N;
+}
+
+inline int smaller_powersum_of_two(int n) {
+  int base = 1;
+  int N = 0;
+  while (N < n) {
+    N += base;
+    base *= 2;
+  }
+  return N - base / 2;
+}
+
 /*
   Generate a kd tree from the given data. If this process is not the main
   process, this function blocks the process until another process wakes
@@ -80,16 +105,9 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
-  int procs = n_processes;
-  int nodes_per_level = 1;
-  int dpth = -1;
-  while (procs >= nodes_per_level) {
-    dpth++;
-    procs -= nodes_per_level;
-    nodes_per_level *= 2;
-  }
-  max_depth = dpth;
-  surplus_processes = n_processes - (int)pow(2.0, (double)max_depth);
+  int temp = smaller_powersum_of_two(n_processes);
+  max_depth = log2((double)temp);
+  surplus_processes = n_processes - temp;
 #ifdef DEBUG
   if (rank == 0) {
     std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
@@ -204,8 +222,11 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
     }
 #endif
     if (size > 0) {
-      serial_splits = (DataPoint *)::operator new(size * sizeof(DataPoint));
-      serial_branch_size = size;
+      // we want that the serial branch is storable in an array whose size is
+      // a powersum of two
+      serial_branch_size = bigger_powersum_of_two(size);
+      serial_splits =
+          (DataPoint *)::operator new(serial_branch_size * sizeof(DataPoint));
       build_tree_serial(array, size, depth, 0);
     }
     return finalize();
@@ -283,7 +304,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
     new (serial_splits + start_index)
         DataPoint(std::move(array[split_point_idx]));
 
-    int right_region = start_index + size / 2 + size % 2;
+    int right_region = start_index + (serial_branch_size - start_index) / 2;
 
     // right
     build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
