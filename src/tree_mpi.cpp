@@ -101,7 +101,9 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
     MPI_Recv(&br_size_depth_parent, 3, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
 
+    // number of data points in the branch
     size = br_size_depth_parent[0];
+    // depth of the tree at this point
     int depth = br_size_depth_parent[1];
     // rank of the parent which "started" (i.e. waked) this process
     parent = br_size_depth_parent[2];
@@ -123,10 +125,9 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
   // we create an array which packs all the data in a convenient way.
   // this weird mechanic is needed because we do not want to call the default
   // constructor (which the plain 'new' does)
-  int data_point_arr_size = (int)(size / dims);
   DataPoint *array =
-      (DataPoint *)::operator new(data_point_arr_size * sizeof(DataPoint));
-  for (int i = 0; i < data_point_arr_size; i++) {
+      (DataPoint *)::operator new(size * sizeof(DataPoint));
+  for (int i = 0; i < size; i++) {
     new (array + i) DataPoint(data + i * dims, dims);
   }
 
@@ -136,7 +137,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
             << std::endl;
 #endif
 
-  return build_tree(array, data_point_arr_size, depth);
+  return build_tree(array, size, depth);
 }
 
 // sort the given array such that the element in the middle is exactly the
