@@ -40,9 +40,9 @@ extern DataPoint *serial_splits;
 // list of processes started by this process
 extern std::vector<int> children;
 
-data_type *generate_kd_tree(data_type *data, int size, int dms);
-data_type *build_tree(DataPoint *array, int size, int depth);
+data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size);
+void build_tree(DataPoint *array, int size, int depth);
 void build_tree_serial(DataPoint *array, int size, int depth, int start_index);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
-data_type *finalize();
+data_type *finalize(int *new_size);

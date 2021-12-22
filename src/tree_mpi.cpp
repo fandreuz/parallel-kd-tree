@@ -81,7 +81,7 @@ inline int smaller_powersum_of_two(int n) {
   point.
   size is the dimension of the dataset, i.e. len(data) / dms.
 */
-data_type *generate_kd_tree(data_type *data, int size, int dms) {
+data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
   // we can save dims as a global variable since it is not going to change. it
   // is also constant for all the processes.
   dims = dms;
@@ -161,7 +161,8 @@ data_type *generate_kd_tree(data_type *data, int size, int dms) {
             << std::endl;
 #endif
 
-  return build_tree(array, size, depth);
+  build_tree(array, size, depth);
+  return finalize(new_size);
 }
 
 // sort the given array such that the element in the middle is exactly the
@@ -212,7 +213,7 @@ inline int next_process_rank(int next_depth) {
    - depth is the depth of a node created by a call to build_tree. depth starts
     from 0
 */
-data_type *build_tree(DataPoint *array, int size, int depth) {
+void build_tree(DataPoint *array, int size, int depth) {
   int next_depth = depth + 1;
 
   if (size <= 1 || next_depth > max_depth + 1 ||
@@ -234,7 +235,6 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
           (DataPoint *)::operator new(serial_branch_size * sizeof(DataPoint));
       build_tree_serial(array, size, depth, 0);
     }
-    return finalize();
   } else {
     int dimension = select_splitting_dimension(depth);
     int split_point_idx = sort_and_split(array, size, dimension);
@@ -278,7 +278,7 @@ data_type *build_tree(DataPoint *array, int size, int depth) {
     children.push_back(right_process_rank);
 
     // this process takes care of the left part
-    return build_tree(array, split_point_idx, next_depth);
+    build_tree(array, split_point_idx, next_depth);
   }
 }
 
@@ -322,7 +322,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
   }
 }
 
-data_type *finalize() {
+data_type *finalize(int *new_size) {
   // we wait for all the child processes to complete their work
   int n_children = children.size();
 
@@ -410,6 +410,7 @@ data_type *finalize() {
     return nullptr;
   } else {
     // this is the root process
+    *new_size = left_branch_size;
     return left_branch_buffer;
   }
 }

@@ -25,12 +25,18 @@ int main(int argc, char **argv) {
     }
   }
 
-  data_type *tree = generate_kd_tree(dt, SIZE, DIMS);
+  int new_size;
+  int *new_size_ptr = nullptr;
+  if(rank == 0)
+    new_size_ptr = &new_size;
+
+  data_type *tree = generate_kd_tree(dt, SIZE, DIMS, new_size_ptr);
+
   int next_powersum = 1;
   int current_multiplier = 1;
   if (rank == 0)
   {
-    for (int i = 0; i < SIZE; i++) {
+    for (int i = 0; i < *new_size_ptr; i++) {
       std::cout << "(";
       for (int j = 0; j < DIMS; j++) {
         if (j > 0)
