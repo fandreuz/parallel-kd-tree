@@ -1,6 +1,7 @@
 #include "tree_mpi.h"
 
 #include <unistd.h>
+#include <limits>
 
 #if !defined(DOUBLE_PRECISION)
 #define mpi_data_type MPI_FLOAT
@@ -12,7 +13,7 @@
 
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
 #define TAG_RIGHT_PROCESS_N_ITEMS 11
-#define EMPTY_PLACEHOLDER 0.0
+#define EMPTY_PLACEHOLDER std::numeric_limits<int>::min()
 
 // holds the rank of whoever called this process
 int parent = -1;
