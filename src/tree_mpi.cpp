@@ -429,9 +429,6 @@ data_type *finalize(int *new_size) {
     std::memcpy(left_branch_buffer, serial_splits[0].data(),
                 dims * sizeof(data_type));
 
-    // we do not need this anymore
-    delete[] serial_splits;
-
     int branches_size = (serial_branch_size - 1) / 2;
     // we skip the first element since it is going to stay there
     rearrange_branches(
