@@ -1,7 +1,7 @@
 #include "data_point.h"
 
-#include <limits>
 #include <cstring>
+#include <limits>
 
 #define EMPTY_PLACEHOLDER std::numeric_limits<int>::min()
 
@@ -32,7 +32,7 @@ inline int smaller_powersum_of_two(int n) {
 
 // transform the given DataPoint array in a 1D array such that `dims` contiguous
 // items constitute a data point
-data_type *unpack_array(DataPoint *array, int size, int dims) {
+inline data_type *unpack_array(DataPoint *array, int size, int dims) {
   data_type *unpacked = new data_type[size * dims];
   for (int i = 0; i < size; ++i) {
     data_type *d = array[i].data();
@@ -56,8 +56,9 @@ data_type *unpack_array(DataPoint *array, int size, int dims) {
 
   Remember to add a split point before this function call (if you need to).
 */
-void rearrange_branches(data_type *dest, data_type *branch1, int branch1_size,
-                        data_type *branch2, int branch2_size, int dims) {
+inline void rearrange_branches(data_type *dest, data_type *branch1,
+                               int branch1_size, data_type *branch2,
+                               int branch2_size, int dims) {
   int already_added = 0;
   // number of nodes in each branch (left and right)at the current level of
   // the tree
