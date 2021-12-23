@@ -127,7 +127,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
 
     // number of data points in the branch
     size = br_size_depth_parent[0];
-    if(size == 0) {
+    if (size == 0) {
       // a process warned this process that there is no work to perform
       return nullptr;
     }
@@ -293,8 +293,25 @@ void build_tree(DataPoint *array, int size, int depth) {
 
     children.push_back(right_process_rank);
 
+    // if there is nothing left in this branch we need to artificially augument
+    // it with a fictious node
+    data_type *fake_data;
+    if (split_point_idx == 0) {
+      fake_data = new data_type[dims];
+      for (int i = 0; i < dims; ++i)
+        fake_data[i] = EMPTY_PLACEHOLDER;
+      array = new DataPoint(fake_data, dims);
+      // since this (local) variale is used as the size in the next call to
+      // build_tree we increase it by one (since we generated fake data).
+      split_point_idx = 1;
+    }
     // this process takes care of the left part
     build_tree(array, split_point_idx, next_depth);
+
+    if (split_point_idx == 0) {
+      delete[] fake_data;
+      delete array;
+    }
   }
 }
 
@@ -392,9 +409,11 @@ data_type *finalize(int *new_size) {
     int start_index = 0;
     while (already_added < right_branch_size + left_branch_size + 1) {
       // we put into the three what's inside the left subtree
-      std::memcpy(merging_array + already_added * dims,
-                  left_branch_buffer + start_index,
-                  nodes * dims * sizeof(data_type));
+      if (left_branch_size > 0) {
+        std::memcpy(merging_array + already_added * dims,
+                    left_branch_buffer + start_index,
+                    nodes * dims * sizeof(data_type));
+      }
       // we put into the three what's inside the right subtree
       std::memcpy(merging_array + (nodes + already_added) * dims,
                   right_branch_buffer + start_index,
