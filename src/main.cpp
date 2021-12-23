@@ -59,7 +59,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  delete[] dt;
+  // TODO: this fails for some reason I do not understand...
+  // delete[] dt;
 
   MPI_Finalize();
 }
