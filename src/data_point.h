@@ -1,3 +1,6 @@
+#ifndef DATAPOINT_H
+#define DATAPOINT_H
+
 #include <cstring>
 
 #if !defined(DOUBLE_PRECISION)
@@ -80,3 +83,5 @@ struct DataPointCompare {
   }
   size_t index_;
 };
+
+#endif // DATAPOINT_H
