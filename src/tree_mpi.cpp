@@ -354,7 +354,8 @@ data_type *finalize(int *new_size) {
         left_branch_buffer + dims, temp_left_branch_buffer, branches_size,
         temp_left_branch_buffer + branches_size * dims, branches_size, dims);
 
-    delete[] temp_left_branch_buffer;
+    // this fails for some reason I do not understand...
+    // delete[] temp_left_branch_buffer;
   }
 
   // merged_array contains the values which results from merging a right branch
