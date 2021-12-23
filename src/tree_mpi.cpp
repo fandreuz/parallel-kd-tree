@@ -399,18 +399,16 @@ data_type *finalize(int &size) {
 
       data_type *temp = new data_type[max * dims];
       std::memcpy(temp, old_buffer, min * dims * sizeof(data_type));
-      for (int i = min * dims; i < max * dims; i++) {
+      for (int i = min * dims; i < max * dims; ++i) {
         temp[i] = EMPTY_PLACEHOLDER;
       }
 
+      delete[] old_buffer;
+
       if (left_branch_size < right_branch_size) {
-        delete[] left_branch_buffer;
         left_branch_buffer = temp;
         left_branch_size = max;
-      }
-      else
-      {
-        delete[] right_branch_buffer;
+      } else {
         right_branch_buffer = temp;
         right_branch_size = max;
       }
@@ -431,6 +429,7 @@ data_type *finalize(int &size) {
     // TODO: this fails for some reason I do not understand...
     // delete[] right_branch_buffer;
     // delete[] left_branch_buffer;
+
     // we go one level up, therefore the merging array is now the array that
     // represents the left branch buffer
     left_branch_buffer = merging_array;
