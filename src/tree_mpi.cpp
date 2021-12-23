@@ -39,6 +39,9 @@ std::vector<DataPoint> parallel_splits;
 // this is an array of pointers since DataPoint resulting from serial splits
 // are taken from an already existing DataPoint array
 DataPoint *serial_splits;
+// if an index is true, the corresponding index in serial_splits contains an
+// item which was initialized
+bool *initialized;
 
 // list of processes started by this process
 std::vector<int> children;
@@ -134,7 +137,7 @@ data_type *generate_kd_tree(data_type *data, int &size, int dms) {
   // we can delete data if and only if we're the owner, i.e. we created the
   // data, but this is not true if the rank is 0 (in such case the data is
   // owned by the user).
-  if(rank != 0)
+  if (rank != 0)
     delete[] data;
 
 #ifdef DEBUG
@@ -200,6 +203,12 @@ void build_tree(DataPoint *array, int size, int depth) {
       serial_branch_size = bigger_powersum_of_two(size);
       serial_splits =
           (DataPoint *)::operator new(serial_branch_size * sizeof(DataPoint));
+
+      initialized = new bool[serial_branch_size];
+      for (int i = 0; i < serial_branch_size; ++i) {
+        initialized[i] = false;
+      }
+
       build_tree_serial(array, size, depth, 0, serial_branch_size);
     }
 
@@ -292,6 +301,8 @@ void build_tree(DataPoint *array, int size, int depth) {
 */
 void build_tree_serial(DataPoint *array, int size, int depth, int start_index,
                        int right_limit) {
+  initialized[start_index] = true;
+
   if (size <= 1) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
@@ -345,8 +356,8 @@ data_type *finalize(int &size) {
   if (serial_branch_size > 0) {
     left_branch_buffer = new data_type[serial_branch_size];
     // this is a temp copy used to keep the data safe
-    data_type *temp_left_branch_buffer =
-        unpack_array(serial_splits + 1, serial_branch_size - 1, dims);
+    data_type *temp_left_branch_buffer = unpack_risky_array(
+        serial_splits + 1, serial_branch_size - 1, dims, initialized + 1);
 
     // we copy the first serial splitting item into left_branch_buffer
     std::memcpy(left_branch_buffer, serial_splits[0].data(),

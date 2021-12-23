@@ -36,9 +36,20 @@ inline data_type *unpack_array(DataPoint *array, int size, int dims) {
   data_type *unpacked = new data_type[size * dims];
   for (int i = 0; i < size; ++i) {
     data_type *d = array[i].data();
-    if (d)
+    std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
+  }
+  return unpacked;
+}
+
+// unpack an array which may contain uninitialized items
+inline data_type *unpack_risky_array(DataPoint *array, int size, int dims,
+                                     bool *initialized) {
+  data_type *unpacked = new data_type[size * dims];
+  for (int i = 0; i < size; ++i) {
+    if (initialized[i]) {
+      data_type *d = array[i].data();
       std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
-    else {
+    } else {
       for (int j = 0; j < dims; ++j) {
         unpacked[i * dims + j] = EMPTY_PLACEHOLDER;
       }
@@ -50,7 +61,8 @@ inline data_type *unpack_array(DataPoint *array, int size, int dims) {
 /*
   This function rearranges branch1 and branch2 into dest such that we first
   take 1 node from branch1 and 1 node from branch2, then 2 nodes from branch1
-  and 2 nodes from branch2, then 4 nodes from branch1 and 4 nodes from branch2..
+  and 2 nodes from branch2, then 4 nodes from branch1 and 4 nodes from
+  branch2..
 
   Note that this function is dimensions-safe (i.e. copies all the dimensions).
 
