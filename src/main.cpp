@@ -14,9 +14,9 @@ int main(int argc, char **argv) {
 
   data_type *dt = nullptr;
   if (rank == 0) {
-    dt = new data_type[SIZE*DIMS];
+    dt = new data_type[SIZE * DIMS];
 
-    for (int i = 0; i < SIZE*DIMS; i++) {
+    for (int i = 0; i < SIZE * DIMS; i++) {
       dt[i] = i * i - 2 * i;
 
 #ifdef DEBUG
@@ -27,15 +27,15 @@ int main(int argc, char **argv) {
 
   int new_size;
   int *new_size_ptr = nullptr;
-  if(rank == 0)
+  if (rank == 0)
     new_size_ptr = &new_size;
 
   data_type *tree = generate_kd_tree(dt, SIZE, DIMS, new_size_ptr);
 
   int next_powersum = 1;
   int current_multiplier = 1;
-  if (rank == 0)
-  {
+  int counter = 0;
+  if (rank == 0) {
     for (int i = 0; i < *new_size_ptr; i++) {
       std::cout << "(";
       for (int j = 0; j < DIMS; j++) {
@@ -45,10 +45,16 @@ int main(int argc, char **argv) {
       }
       std::cout << ")";
 
-      if(i + 1 == next_powersum) {
+      if (i + 1 == next_powersum) {
         std::cout << "--";
         current_multiplier *= 2;
         next_powersum += current_multiplier;
+      } else {
+        counter++;
+        if (counter == 2) {
+          std::cout << " | " << std::endl;
+          counter = 0;
+        }
       }
     }
   }

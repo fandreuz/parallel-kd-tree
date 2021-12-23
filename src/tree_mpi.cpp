@@ -423,7 +423,8 @@ data_type *finalize(int *new_size) {
         unpack_array(serial_splits + 1, serial_branch_size - 1);
 
     // we copy the first serial splitting item into left_branch_buffer
-    std::memcpy(left_branch_buffer, serial_splits[0].data(), dims);
+    std::memcpy(left_branch_buffer, serial_splits[0].data(),
+                dims * sizeof(data_type));
 
     int branches_size = (serial_branch_size - 1) / 2;
     // we skip the first element since it is going to stay there
