@@ -69,27 +69,23 @@ inline data_type *unpack_risky_array(DataPoint *array, int size, int dims,
   Remember to add a split point before this function call (if you need to).
 */
 inline void rearrange_branches(data_type *dest, data_type *branch1,
-                               int branch1_size, data_type *branch2,
-                               int branch2_size, int dims) {
+                               data_type *branch2, int branches_size,
+                               int dims) {
   int already_added = 0;
   // number of nodes in each branch (left and right)at the current level of
   // the tree
   int nodes = 1;
-  // index of left(right)_branch_buffer from which we start memcpying
-  int start_index = 0;
-  while (already_added < branch1_size + branch2_size) {
+  while (already_added < 2 * branches_size) {
     // we put into the three what's inside the left subtree
-    if (branch1_size > 0) {
-      std::memcpy(dest + already_added * dims, branch1 + start_index,
-                  nodes * dims * sizeof(data_type));
-    }
-    // we put into the three what's inside the right subtree
-    std::memcpy(dest + (nodes + already_added) * dims, branch2 + start_index,
+    std::memcpy(dest + already_added * dims, branch1,
                 nodes * dims * sizeof(data_type));
+    branch1 += nodes * dims;
 
-    // the next iteration we're going to start in a different position of
-    // left(right)_branch_buffer
-    start_index += nodes * dims;
+    // we put into the three what's inside the right subtree
+    std::memcpy(dest + (nodes + already_added) * dims, branch2,
+                nodes * dims * sizeof(data_type));
+    branch2 += nodes * dims;
+
     // we just added left and right branch
     already_added += nodes * 2;
     // the next level will have twice the number of nodes of the current level

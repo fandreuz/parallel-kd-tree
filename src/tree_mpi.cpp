@@ -367,9 +367,9 @@ data_type *finalize(int &size) {
 
     int branches_size = (serial_branch_size - 1) / 2;
     // we skip the first element since it is going to stay there
-    rearrange_branches(
-        left_branch_buffer + dims, temp_left_branch_buffer, branches_size,
-        temp_left_branch_buffer + branches_size * dims, branches_size, dims);
+    rearrange_branches(left_branch_buffer + dims, temp_left_branch_buffer,
+                       temp_left_branch_buffer + branches_size * dims,
+                       branches_size, dims);
 
     // TODO: this fails for some reason I do not understand...
     // delete[] temp_left_branch_buffer;
@@ -392,6 +392,7 @@ data_type *finalize(int &size) {
              right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD,
              &status);
 
+    int branch_size = left_branch_size;
     if (right_branch_size != left_branch_size) {
       int max = std::max(right_branch_size, left_branch_size);
       int min = std::min(right_branch_size, left_branch_size);
@@ -407,12 +408,12 @@ data_type *finalize(int &size) {
 
       delete[] old_buffer;
 
+      branch_size = max;
+
       if (left_branch_size < right_branch_size) {
         left_branch_buffer = temp;
-        left_branch_size = max;
       } else {
         right_branch_buffer = temp;
-        right_branch_size = max;
       }
     }
 
@@ -425,8 +426,7 @@ data_type *finalize(int &size) {
     std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
 
     rearrange_branches(merging_array + dims, left_branch_buffer,
-                       left_branch_size, right_branch_buffer, right_branch_size,
-                       dims);
+                       right_branch_buffer, branch_size, dims);
 
     // TODO: this fails for some reason I do not understand...
     // delete[] right_branch_buffer;
