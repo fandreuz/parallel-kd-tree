@@ -1,4 +1,7 @@
+#ifndef DataPoint
 #include "data_point.h"
+#endif
+
 #include <limits>
 #include <cstring>
 
