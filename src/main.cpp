@@ -28,18 +28,14 @@ int main(int argc, char **argv) {
     }
   }
 
-  int new_size;
-  int *new_size_ptr = nullptr;
-  if (rank == 0)
-    new_size_ptr = &new_size;
-
-  data_type *tree = generate_kd_tree(dt, SIZE, DIMS, new_size_ptr);
+  int size = SIZE;
+  data_type *tree = generate_kd_tree(dt, size, DIMS);
 
   int next_powersum = 1;
   int current_multiplier = 1;
   int counter = 0;
   if (rank == 0) {
-    for (int i = 0; i < *new_size_ptr; i++) {
+    for (int i = 0; i < size; i++) {
       std::cout << "(";
       for (int j = 0; j < DIMS; j++) {
         if (j > 0)

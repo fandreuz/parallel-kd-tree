@@ -53,7 +53,7 @@ std::vector<int> children;
   point.
   size is the dimension of the dataset, i.e. len(data) / dms.
 */
-data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
+data_type *generate_kd_tree(data_type *data, int &size, int dms) {
   // we can save dims as a global variable since it is not going to change. it
   // is also constant for all the processes.
   dims = dms;
@@ -139,8 +139,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
 #endif
 
   build_tree(array, size, depth);
-
-  return finalize(new_size);
+  return finalize(size);
 }
 
 /*
@@ -322,7 +321,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index,
   }
 }
 
-data_type *finalize(int *new_size) {
+data_type *finalize(int &size) {
   // we wait for all the child processes to complete their work
   int n_children = children.size();
 
@@ -411,7 +410,7 @@ data_type *finalize(int *new_size) {
     return nullptr;
   } else {
     // this is the root process
-    *new_size = left_branch_size;
+    size = left_branch_size;
     return left_branch_buffer;
   }
 }
