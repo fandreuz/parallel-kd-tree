@@ -1,7 +1,4 @@
 #include "tree_mpi.h"
-#include "utils.h"
-
-#include <unistd.h>
 
 #if !defined(DOUBLE_PRECISION)
 #define mpi_data_type MPI_FLOAT

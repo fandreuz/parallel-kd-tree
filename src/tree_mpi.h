@@ -1,5 +1,7 @@
 #include "data_point.h"
+#include "utils.h"
 
+#include <unistd.h>
 #include <algorithm>
 #include <cstring>
 #include <iostream>
