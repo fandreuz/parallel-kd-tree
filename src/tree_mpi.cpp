@@ -1,7 +1,7 @@
 #include "tree_mpi.h"
 
-#include <unistd.h>
 #include <limits>
+#include <unistd.h>
 
 #if !defined(DOUBLE_PRECISION)
 #define mpi_data_type MPI_FLOAT
@@ -238,7 +238,7 @@ void build_tree(DataPoint *array, int size, int depth) {
       serial_branch_size = bigger_powersum_of_two(size);
       serial_splits =
           (DataPoint *)::operator new(serial_branch_size * sizeof(DataPoint));
-      build_tree_serial(array, size, depth, 0);
+      build_tree_serial(array, size, depth, 0, serial_branch_size);
     }
 
     // this process should have called a surplus process to do some stuff, but
@@ -322,8 +322,13 @@ void build_tree(DataPoint *array, int size, int depth) {
 
    - array is the set of values to be inserted into the tree.
    - size is the size of array
+   - depth is the depth of the tree after the addition of this new level
+   - start_index is the first index of serial_splits in which we can write
+      something
+   - right_limit is the first element on the right in which we cannot write
 */
-void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
+void build_tree_serial(DataPoint *array, int size, int depth, int start_index,
+                       int right_limit) {
   if (size <= 1) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
@@ -344,15 +349,17 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index) {
 
     // we can start writing the left region immediately after the cell in which
     // we wrote the split point
+    int regions_size = (right_limit - start_index - 1) / 2;
     int left_region = start_index + 1;
-    int right_region = left_region + (serial_branch_size - left_region) / 2;
+    int right_region = left_region + regions_size;
 
     // right
     build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
-                      depth + 1, right_region);
+                      depth + 1, right_region, right_limit);
     // left
     if (split_point_idx > 0)
-      build_tree_serial(array, split_point_idx, depth + 1, left_region);
+      build_tree_serial(array, split_point_idx, depth + 1, left_region,
+                        right_region);
   }
 }
 
