@@ -371,8 +371,7 @@ data_type *finalize(int &size) {
                        temp_left_branch_buffer + branches_size * dims,
                        branches_size, dims);
 
-    // TODO: this fails for some reason I do not understand...
-    // delete[] temp_left_branch_buffer;
+    delete[] temp_left_branch_buffer;
   }
 
   // merged_array contains the values which results from merging a right branch
@@ -427,9 +426,8 @@ data_type *finalize(int &size) {
     rearrange_branches(merging_array + dims, left_branch_buffer,
                        right_branch_buffer, branch_size, dims);
 
-    // TODO: this fails for some reason I do not understand...
-    // delete[] right_branch_buffer;
-    // delete[] left_branch_buffer;
+    delete[] right_branch_buffer;
+    delete[] left_branch_buffer;
 
     // we go one level up, therefore the merging array is now the array that
     // represents the left branch buffer
@@ -450,8 +448,7 @@ data_type *finalize(int &size) {
 
     MPI_Send(left_branch_buffer, left_branch_size * dims, mpi_data_type, parent,
              TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
-    // TODO: this fails for some reason I do not understand...
-    // delete[] left_branch_buffer;
+    delete[] left_branch_buffer;
     return nullptr;
   } else {
     // this is the root process

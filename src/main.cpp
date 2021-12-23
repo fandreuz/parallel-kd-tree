@@ -30,6 +30,8 @@ int main(int argc, char **argv) {
 
   int size = SIZE;
   data_type *tree = generate_kd_tree(dt, size, DIMS);
+  if (rank == 0)
+    delete[] dt;
 
   int next_powersum = 1;
   int current_multiplier = 1;
@@ -59,8 +61,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  // TODO: this fails for some reason I do not understand...
-  // delete[] dt;
+  if(rank == 0) {
+    delete[] tree;
+  }
 
   MPI_Finalize();
 }
