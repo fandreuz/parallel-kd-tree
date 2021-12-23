@@ -68,6 +68,7 @@ public:
 
   ~DataPoint() {
     delete[] values;
+    values = nullptr;
     data_dimension = -1;
   }
 };

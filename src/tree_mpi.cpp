@@ -159,6 +159,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
   for (int i = 0; i < size; i++) {
     new (array + i) DataPoint(data + i * dims, dims);
   }
+  delete[] data;
 
 #ifdef DEBUG
   std::cout << "[rank" << rank
@@ -167,6 +168,7 @@ data_type *generate_kd_tree(data_type *data, int size, int dms, int *new_size) {
 #endif
 
   build_tree(array, size, depth);
+
   return finalize(new_size);
 }
 
@@ -302,6 +304,7 @@ void build_tree(DataPoint *array, int size, int depth) {
       for (int i = 0; i < dims; ++i)
         fake_data[i] = EMPTY_PLACEHOLDER;
       array = new DataPoint(fake_data, dims);
+      delete[] fake_data;
       // since this (local) variale is used as the size in the next call to
       // build_tree we increase it by one (since we generated fake data).
       split_point_idx = 1;
@@ -426,11 +429,16 @@ data_type *finalize(int *new_size) {
     std::memcpy(left_branch_buffer, serial_splits[0].data(),
                 dims * sizeof(data_type));
 
+    // we do not need this anymore
+    delete[] serial_splits;
+
     int branches_size = (serial_branch_size - 1) / 2;
     // we skip the first element since it is going to stay there
     rearrange_branches(
         left_branch_buffer + dims, temp_left_branch_buffer, branches_size,
         temp_left_branch_buffer + branches_size * dims, branches_size);
+
+    delete[] temp_left_branch_buffer;
   }
 
   // merged_array contains the values which results from merging a right branch
