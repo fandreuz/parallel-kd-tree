@@ -363,6 +363,43 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index,
   }
 }
 
+/*
+  This function rearranges branch1 and branch2 into dest such that we first
+  take 1 node from branch1 and 1 node from branch2, then 2 nodes from branch1
+  and 2 nodes from branch2, then 4 nodes from branch1 and 4 nodes from branch2..
+
+  Note that this function is dimensions-safe (i.e. copies all the dimensions).
+
+  Remember to add a split point before this function call (if you need to).
+*/
+void rearrange_branches(data_type *dest, data_type *branch1, int branch1_size,
+                        data_type *branch2, int branch2_size) {
+  int already_added = 0;
+  // number of nodes in each branch (left and right)at the current level of
+  // the tree
+  int nodes = 1;
+  // index of left(right)_branch_buffer from which we start memcpying
+  int start_index = 0;
+  while (already_added < branch1_size + branch2_size) {
+    // we put into the three what's inside the left subtree
+    if (branch1_size > 0) {
+      std::memcpy(dest + already_added * dims, branch1 + start_index,
+                  nodes * dims * sizeof(data_type));
+    }
+    // we put into the three what's inside the right subtree
+    std::memcpy(dest + (nodes + already_added) * dims, branch2 + start_index,
+                nodes * dims * sizeof(data_type));
+
+    // the next iteration we're going to start in a different position of
+    // left(right)_branch_buffer
+    start_index += nodes * dims;
+    // we just added left and right branch
+    already_added += nodes * 2;
+    // the next level will have twice the number of nodes of the current level
+    nodes *= 2;
+  }
+}
+
 data_type *finalize(int *new_size) {
   // we wait for all the child processes to complete their work
   int n_children = children.size();
@@ -380,8 +417,15 @@ data_type *finalize(int *new_size) {
   int left_branch_size = serial_branch_size;
 
   if (serial_branch_size > 0) {
-    // we load the left branch corresponding to the last serial split
-    left_branch_buffer = unpack_array(serial_splits, serial_branch_size);
+    left_branch_buffer = new data_type[serial_branch_size];
+    // this is a temp copy used to keep the data safe
+    data_type *temp_left_branch_buffer =
+        unpack_array(serial_splits, serial_branch_size);
+
+    int branches_size = (serial_branch_size - 1) / 2;
+    rearrange_branches(
+        left_branch_buffer + 1, temp_left_branch_buffer + 1, branches_size,
+        temp_left_branch_buffer + 1 + branches_size, branches_size);
   }
 
   // merged_array contains the values which results from merging a right branch
@@ -408,33 +452,9 @@ data_type *finalize(int *new_size) {
     // the root of this tree is the data point used to split left and right
     std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
 
-    // we already added the splitting point
-    int already_added = 1;
-    // number of nodes in each branch (left and right)at the current level of
-    // the tree
-    int nodes = 1;
-    // index of left(right)_branch_buffer from which we start memcpying
-    int start_index = 0;
-    while (already_added < right_branch_size + left_branch_size + 1) {
-      // we put into the three what's inside the left subtree
-      if (left_branch_size > 0) {
-        std::memcpy(merging_array + already_added * dims,
-                    left_branch_buffer + start_index,
-                    nodes * dims * sizeof(data_type));
-      }
-      // we put into the three what's inside the right subtree
-      std::memcpy(merging_array + (nodes + already_added) * dims,
-                  right_branch_buffer + start_index,
-                  nodes * dims * sizeof(data_type));
-
-      // the next iteration we're going to start in a different position of
-      // left(right)_branch_buffer
-      start_index += nodes * dims;
-      // we just added left and right branch
-      already_added += nodes * 2;
-      // the next level will have twice the number of nodes of the current level
-      nodes *= 2;
-    }
+    rearrange_branches(merging_array + dims, left_branch_buffer,
+                       left_branch_size, right_branch_buffer,
+                       right_branch_size);
 
     delete[] right_branch_buffer;
     delete[] left_branch_buffer;
