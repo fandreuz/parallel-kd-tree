@@ -420,12 +420,16 @@ data_type *finalize(int *new_size) {
     left_branch_buffer = new data_type[serial_branch_size];
     // this is a temp copy used to keep the data safe
     data_type *temp_left_branch_buffer =
-        unpack_array(serial_splits, serial_branch_size);
+        unpack_array(serial_splits + 1, serial_branch_size - 1);
+
+    // we copy the first serial splitting item into left_branch_buffer
+    std::memcpy(left_branch_buffer, serial_splits[0].data(), dims);
 
     int branches_size = (serial_branch_size - 1) / 2;
+    // we skip the first element since it is going to stay there
     rearrange_branches(
-        left_branch_buffer + 1, temp_left_branch_buffer + 1, branches_size,
-        temp_left_branch_buffer + 1 + branches_size, branches_size);
+        left_branch_buffer + dims, temp_left_branch_buffer, branches_size,
+        temp_left_branch_buffer + branches_size * dims, branches_size);
   }
 
   // merged_array contains the values which results from merging a right branch
