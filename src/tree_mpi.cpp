@@ -383,6 +383,13 @@ data_type *finalize(int &size) {
     MPI_Recv(&right_branch_size, 1, MPI_INT, right_rank,
              TAG_RIGHT_PROCESS_N_ITEMS, MPI_COMM_WORLD, &status);
 
+    right_branch_buffer = new data_type[right_branch_size * dims];
+
+    // we gather the branch from another process
+    MPI_Recv(right_branch_buffer, right_branch_size * dims, mpi_data_type,
+             right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD,
+             &status);
+
     if (right_branch_size != left_branch_size) {
       int max = std::max(right_branch_size, left_branch_size);
       int min = std::min(right_branch_size, left_branch_size);
@@ -399,9 +406,13 @@ data_type *finalize(int &size) {
       if (left_branch_size < right_branch_size) {
         delete[] left_branch_buffer;
         left_branch_buffer = temp;
-      } else {
+        left_branch_size = max;
+      }
+      else
+      {
         delete[] right_branch_buffer;
         right_branch_buffer = temp;
+        right_branch_size = max;
       }
     }
 
@@ -409,12 +420,6 @@ data_type *finalize(int &size) {
 
     merging_array =
         new data_type[(right_branch_size + left_branch_size + 1) * dims];
-    right_branch_buffer = new data_type[right_branch_size * dims];
-
-    // we gather the branch from another process
-    MPI_Recv(right_branch_buffer, right_branch_size * dims, mpi_data_type,
-             right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD,
-             &status);
 
     // the root of this tree is the data point used to split left and right
     std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
