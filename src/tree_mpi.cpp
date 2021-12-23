@@ -383,6 +383,28 @@ data_type *finalize(int &size) {
     MPI_Recv(&right_branch_size, 1, MPI_INT, right_rank,
              TAG_RIGHT_PROCESS_N_ITEMS, MPI_COMM_WORLD, &status);
 
+    if (right_branch_size != left_branch_size) {
+      int max = std::max(right_branch_size, left_branch_size);
+      int min = std::min(right_branch_size, left_branch_size);
+
+      data_type *old_buffer =
+          min == left_branch_size ? left_branch_buffer : right_branch_buffer;
+
+      data_type *temp = new data_type[max * dims];
+      std::memcpy(temp, old_buffer, min * dims * sizeof(data_type));
+      for (int i = min * dims; i < max * dims; i++) {
+        temp[i] = EMPTY_PLACEHOLDER;
+      }
+
+      if (left_branch_size < right_branch_size) {
+        delete[] left_branch_buffer;
+        left_branch_buffer = temp;
+      } else {
+        delete[] right_branch_buffer;
+        right_branch_buffer = temp;
+      }
+    }
+
     DataPoint split_item = std::move(parallel_splits.at(i));
 
     merging_array =
