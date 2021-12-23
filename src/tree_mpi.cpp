@@ -281,10 +281,12 @@ void build_tree(DataPoint *array, int size, int depth) {
     // this process takes care of the left part
     build_tree(array, split_point_idx, next_depth);
 
+    /*
     if (split_point_idx == 0) {
       delete[] fake_data;
       delete array;
     }
+    */
   }
 }
 
