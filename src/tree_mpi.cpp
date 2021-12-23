@@ -356,7 +356,7 @@ data_type *finalize(int &size) {
   int left_branch_size = serial_branch_size;
 
   if (serial_branch_size > 0) {
-    left_branch_buffer = new data_type[serial_branch_size];
+    left_branch_buffer = new data_type[serial_branch_size * dims];
     // this is a temp copy used to keep the data safe
     data_type *temp_left_branch_buffer = unpack_risky_array(
         serial_splits + 1, serial_branch_size - 1, dims, initialized + 1);
@@ -419,8 +419,7 @@ data_type *finalize(int &size) {
 
     DataPoint split_item = std::move(parallel_splits.at(i));
 
-    merging_array =
-        new data_type[(right_branch_size + left_branch_size + 1) * dims];
+    merging_array = new data_type[(branch_size * 2 + 1) * dims];
 
     // the root of this tree is the data point used to split left and right
     std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
@@ -438,7 +437,7 @@ data_type *finalize(int &size) {
 
     // the new size of the left branch is the sum of the former left branch size
     // and of the right branch size, plus 1 (the split point)
-    left_branch_size += right_branch_size + 1;
+    left_branch_size = branch_size * 2 + 1;
   }
 
   if (parent != -1) {
