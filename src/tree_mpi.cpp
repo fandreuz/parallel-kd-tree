@@ -130,7 +130,12 @@ data_type *generate_kd_tree(data_type *data, int &size, int dms) {
   for (int i = 0; i < size; i++) {
     new (array + i) DataPoint(data + i * dims, dims);
   }
-  delete[] data;
+
+  // we can delete data if and only if we're the owner, i.e. we created the
+  // data, but this is not true if the rank is 0 (in such case the data is
+  // owned by the user).
+  if(rank != 0)
+    delete[] data;
 
 #ifdef DEBUG
   std::cout << "[rank" << rank
