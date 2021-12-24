@@ -44,8 +44,8 @@ extern std::vector<int> children;
 
 data_type *generate_kd_tree(data_type *data, int &size, int dms);
 void build_tree(DataPoint *array, int size, int depth);
-void build_tree_serial(DataPoint *array, int size, int depth, int start_index,
-                       int right_limit);
+void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
+                       int region_start_index, int branch_starting_index);
 // gather results from all children processes and deliver a complete tree
 // to the parent process
 data_type *finalize(int &new_size);

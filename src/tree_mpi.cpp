@@ -156,6 +156,9 @@ data_type *generate_kd_tree(data_type *data, int &size, int dms) {
    after are respectively lower/greater than that item.
 */
 inline int sort_and_split(DataPoint *array, int size, int axis) {
+  // the second part of median_idx is needed to unbalance the split towards the
+  // left region (which is the one which may parallelize with the highest
+  // probability).
   int median_idx = size / 2 - 1 * ((size + 1) % 2);
   std::nth_element(array, array + median_idx, array + size,
                    DataPointCompare(axis));
@@ -209,7 +212,7 @@ void build_tree(DataPoint *array, int size, int depth) {
         initialized[i] = false;
       }
 
-      build_tree_serial(array, size, depth, 0, serial_branch_size);
+      build_tree_serial(array, size, depth, 1, 0, 0);
     }
 
     // this process should have called a surplus process to do some stuff, but
@@ -297,19 +300,23 @@ void build_tree(DataPoint *array, int size, int depth) {
    - array is the set of values to be inserted into the tree.
    - size is the size of array
    - depth is the depth of the tree after the addition of this new level
-   - start_index is the first index of serial_splits in which we can write
-      something
-   - right_limit is the first element on the right in which we cannot write
+   - region_width is the width of the current region of serial_splits which
+      holds the current level of the serial tree
+   - region_start_index is the index in of serial_splits in which the region
+      corresponding to the current level starts;
+   - branch_starting_index is the index of serial_splits (starting from
+      region_width) in which the item used to split this branch is stored.
 */
-void build_tree_serial(DataPoint *array, int size, int depth, int start_index,
-                       int right_limit) {
-  initialized[start_index] = true;
+void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
+                       int region_start_index, int branch_starting_index) {
+  initialized[region_start_index + branch_starting_index] = true;
 
   if (size <= 1) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
-    new (serial_splits + start_index) DataPoint(std::move(array[0]));
+    new (serial_splits + region_start_index + branch_starting_index)
+        DataPoint(std::move(array[0]));
   } else {
     int dimension = select_splitting_dimension(depth);
     int split_point_idx = sort_and_split(array, size, dimension);
@@ -320,31 +327,22 @@ void build_tree_serial(DataPoint *array, int size, int depth, int start_index,
               << std::endl;
 #endif
 
-    new (serial_splits + start_index)
+    new (serial_splits + region_start_index + branch_starting_index)
         DataPoint(std::move(array[split_point_idx]));
 
-    if (size == 3) {
-      new (serial_splits + start_index + 1)
-          DataPoint(std::move(array[split_point_idx - 1]));
-      new (serial_splits + start_index + 2)
-          DataPoint(std::move(array[split_point_idx + 1]));
-      initialized[start_index + 1] = true;
-      initialized[start_index + 2] = true;
-    } else {
-      // we can start writing the left region immediately after the cell in
-      // which we wrote the split point
-      int regions_size = (right_limit - start_index - 1) / 2;
-      int left_region = start_index + 1;
-      int right_region = left_region + regions_size;
+    // we update the values for the next iteration
+    region_start_index += region_width;
+    region_width *= 2;
+    branch_starting_index *= 2;
 
-      // right
-      build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
-                        depth + 1, right_region, right_limit);
-      // left
-      if (split_point_idx > 0)
-        build_tree_serial(array, split_point_idx, depth + 1, left_region,
-                          right_region);
-    }
+    // right
+    build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
+                      depth + 1, region_width, region_start_index,
+                      branch_starting_index + 1);
+    // left
+    if (split_point_idx > 0)
+      build_tree_serial(array, split_point_idx, depth + 1, region_width,
+                        region_start_index, branch_starting_index);
   }
 }
 
@@ -365,7 +363,7 @@ data_type *finalize(int &size) {
   int left_branch_size = serial_branch_size;
 
   if (serial_branch_size > 0) {
-    left_branch_buffer = new data_type[serial_branch_size * dims];
+    /* left_branch_buffer = new data_type[serial_branch_size * dims];
     // this is a temp copy used to keep the data safe
     data_type *temp_left_branch_buffer = unpack_risky_array(
         serial_splits + 1, serial_branch_size - 1, dims, initialized + 1);
@@ -378,9 +376,10 @@ data_type *finalize(int &size) {
     // we skip the first element since it is going to stay there
     rearrange_branches(left_branch_buffer + dims, temp_left_branch_buffer,
                        temp_left_branch_buffer + branches_size * dims,
-                       branches_size, dims);
+                       branches_size, dims); */
 
-    delete[] temp_left_branch_buffer;
+    left_branch_buffer = unpack_risky_array(serial_splits, serial_branch_size,
+                                            dims, initialized);
   }
 
   // merged_array contains the values which results from merging a right branch
