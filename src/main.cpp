@@ -11,8 +11,16 @@ void print(const std::string &prefix, const KNode<data_type> *node,
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
 
-  int SIZE = atoi(getenv("KDTREE_SIZE"));
-  int DIMS = atoi(getenv("KDTREE_DIMS"));
+  int SIZE = -1, DIMS = -1;
+
+  if (getenv("KDTREE_SIZE") == NULL)
+    SIZE = 10;
+  else
+    SIZE = atoi(getenv("KDTREE_SIZE"));
+  if (getenv("KDTREE_DIMS") == NULL)
+    DIMS = 3;
+  else
+    DIMS = atoi(getenv("KDTREE_DIMS"));
 
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := compile
+.DEFAULT_GOAL := output
 
 compile: main.cpp tree_mpi.cpp data_point.h
 	mpic++ -O3 -o tree_mpi data_point.h tree_mpi.cpp main.cpp

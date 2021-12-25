@@ -59,6 +59,24 @@ The k-d tree produced is:
         └──(4,2,0)
 ```
 
+## Usage
+Download the source code with `git clone https://github.com/fAndreuzzi/kd-tree.git`,
+then navigate to the `src` folder and compile the source using the makefile.
+The following recipes are available:
+- `make compile`: Compile the source code, the binary produced won't produce any
+  kind of output;
+- `make debug`: The binary produced will show debug messages and the output;
+- `make output`: Show only the output;
+- `make time`: Show only the time taken to build the k-d tree;
+- `make leaks`: Find memory leaks in the source code, does not produce any other
+  output;
+- `make mpidebug`: Prepare a binary that can be debugged using gdb (the rank
+  of the process to be controlled via gdb must be set via the environment
+  variable `MPI_DEBUG_RANK`).
+
+The default input is generated in `main.cpp`, you can control its size and
+dimensions via the environment variables `KDTREE_SIZE` and `KDTREE_DIMS`.
+
 ## Roadmap
 - [x] Working MPI implementation;
   - [ ] Optimize the last call to `finalize()`: maybe it's not needed (since we traverse the tree in `utils.convert_to_knodes()`);
