@@ -21,11 +21,12 @@
 
 #endif
 
+template <typename T>
 class KNode {
   // point used to split the tree
-  data_type *data;
+  T *data;
   // left and right branch originating from this node
-  KNode *left = nullptr, *right = nullptr;
+  KNode<T> *left = nullptr, *right = nullptr;
 
   // if this node is the root, when deleting the KNode we should also free
   // the variable data, which is an array that in fact holds all the data
@@ -34,7 +35,7 @@ class KNode {
   bool is_root = false;
 
 public:
-  KNode(data_type *d, KNode *l, KNode *r, bool root) {
+  KNode(data_type *d, KNode<T> *l, KNode<T> *r, bool root) {
     data = d;
     left = l;
     right = r;
@@ -48,9 +49,9 @@ public:
     delete right;
   }
 
-  const data_type get_data(int i) const { return data[i]; }
-  const KNode *get_left() const { return left; }
-  const KNode *get_right() const { return right; }
+  const T get_data(int i) const { return data[i]; }
+  const KNode<T> *get_left() const { return left; }
+  const KNode<T> *get_right() const { return right; }
 };
 
 #endif // TREE_H

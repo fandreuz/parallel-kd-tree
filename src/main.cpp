@@ -7,8 +7,8 @@
 #define SIZE 6
 #define DIMS 2
 
-void print(const KNode *node);
-void print(const std::string &prefix, const KNode *node, bool isLeft);
+void print(const KNode<data_type> *node);
+void print(const std::string &prefix, const KNode<data_type> *node, bool isLeft);
 
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
   int size = SIZE;
 
   double start_time = MPI_Wtime();
-  KNode *tree = generate_kd_tree(dt, size, DIMS);
+  KNode<data_type> *tree = generate_kd_tree(dt, size, DIMS);
   double end_time = MPI_Wtime();
 
   // we can now delete the data safely
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   MPI_Finalize();
 }
 
-void print_node(const KNode *node) {
+void print_node(const KNode<data_type> *node) {
   std::cout << "(";
   for (int i = 0; i < dims; i++) {
     if (i > 0)
@@ -73,7 +73,8 @@ void print_node(const KNode *node) {
 }
 
 // implementation taken from https://stackoverflow.com/a/51730733/6585348
-void print(const std::string &prefix, const KNode *node, bool isLeft) {
+void print(const std::string &prefix, const KNode<data_type> *node,
+           bool isLeft) {
   if (node != nullptr) {
     std::cout << prefix;
 
@@ -89,4 +90,4 @@ void print(const std::string &prefix, const KNode *node, bool isLeft) {
   }
 }
 
-void print(const KNode *node) { print("", node, false); }
+void print(const KNode<data_type> *node) { print("", node, false); }
