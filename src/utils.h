@@ -115,11 +115,11 @@ inline KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
                                            int current_level_start,
                                            int current_level_nodes,
                                            int start_offset) {
-  if (tree != nullptr && current_level_start < size) {
-    int next_level_start = current_level_start + current_level_nodes * dims;
-    int next_level_nodes = current_level_nodes * 2;
-    int next_start_offset = start_offset * 2;
+  int next_level_start = current_level_start + current_level_nodes * dims;
+  int next_level_nodes = current_level_nodes * 2;
+  int next_start_offset = start_offset * 2;
 
+  if (next_level_start < size * dims) {
     auto left = convert_to_knodes(tree, size, dims, next_level_start,
                                   next_level_nodes, next_start_offset);
     auto right = convert_to_knodes(tree, size, dims, next_level_start,
@@ -128,9 +128,10 @@ inline KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
     return new KNode<data_type>(tree + current_level_start +
                                     start_offset * dims,
                                 left, right, current_level_start == 0);
-  } else {
-    return nullptr;
-  }
+  } else
+    return new KNode<data_type>(tree + current_level_start +
+                                    start_offset * dims,
+                                nullptr, nullptr, false);
 }
 
 #endif // UTILS_H
