@@ -27,17 +27,24 @@ int main(int argc, char **argv) {
       }
     }
 
-    for (int i = 0; i < SIZE * DIMS; i++) {
 #ifdef DEBUG
-      std::cout << i << " -> " << dt[i] << std::endl;
-#endif
+    for (int i = 0; i < SIZE * DIMS; i++) {
+      if (i % DIMS == 0)
+        std::cout << "(";
+      std::cout << dt[i];
+      if (i % DIMS == DIMS - 1) {
+        std::cout << ")";
+        if (i < SIZE * DIMS - 1)
+          std::cout << " / ";
+      } else
+        std::cout << ",";
     }
+    std::cout << std::endl;
+#endif
   }
 
-  int size = SIZE;
-
   double start_time = MPI_Wtime();
-  KNode<data_type> *tree = generate_kd_tree(dt, size, DIMS);
+  KNode<data_type> *tree = generate_kd_tree(dt, SIZE, DIMS);
   double end_time = MPI_Wtime();
 
   // we can now delete the data safely

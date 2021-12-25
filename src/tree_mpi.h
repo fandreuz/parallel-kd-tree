@@ -49,7 +49,7 @@ extern std::vector<int> children;
 // item which was initialized
 extern bool *initialized;
 
-KNode<data_type> *generate_kd_tree(data_type *data, int &size, int dms);
+KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms);
 void build_tree(DataPoint *array, int size, int depth);
 void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
                        int region_start_index, int branch_starting_index);
