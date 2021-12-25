@@ -72,6 +72,7 @@ void print_node(const KNode *node) {
   std::cout << ")";
 }
 
+// implementation taken from https://stackoverflow.com/a/51730733/6585348
 void print(const std::string &prefix, const KNode *node, bool isLeft) {
   if (node != nullptr) {
     std::cout << prefix;
