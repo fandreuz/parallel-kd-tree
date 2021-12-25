@@ -11,39 +11,16 @@
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
 #define TAG_RIGHT_PROCESS_N_ITEMS 11
 
-// holds the rank of whoever called this process
 int parent = -1;
-
-// number of dimensions in the dataset
 int dims;
-
-// rank of this process
 int rank;
-
-// number of MPI processes
 int n_processes;
-
-// maximum process splitting available for the given number of MPI processes
 int max_depth = 0;
-
-// n of processes such that rank > 2^max_depth
 int surplus_processes;
-
 int serial_branch_size = 0;
-
-// list of data point idxes in which this process splitted its branch.
-// this process then got assigned the left branch. note that this vector
-// contains only "parallel" splits, serial splits are handled otherwise.
 std::vector<DataPoint> parallel_splits;
-
-// this is an array of pointers since DataPoint resulting from serial splits
-// are taken from an already existing DataPoint array
 DataPoint *serial_splits;
-// if an index is true, the corresponding index in serial_splits contains an
-// item which was initialized
 bool *initialized;
-
-// list of processes started by this process
 std::vector<int> children;
 
 /*

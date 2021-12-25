@@ -23,11 +23,13 @@ extern int rank;
 // number of MPI processes
 extern int rank;
 
+// n of processes such that rank > 2^max_depth
 extern int surplus_processes;
 
 // maximum process splitting available for the given number of MPI processes
 extern int max_depth;
 
+// size of the serial branch assigned to this process
 extern int serial_branch_size;
 
 // list of data point idxes in which this process splitted its branch.
@@ -41,6 +43,10 @@ extern DataPoint *serial_splits;
 
 // list of processes started by this process
 extern std::vector<int> children;
+
+// if an index is true, the corresponding index in serial_splits contains an
+// item which was initialized
+extern bool *initialized;
 
 data_type *generate_kd_tree(data_type *data, int &size, int dms);
 void build_tree(DataPoint *array, int size, int depth);
