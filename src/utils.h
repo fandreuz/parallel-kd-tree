@@ -100,7 +100,35 @@ inline void rearrange_branches(data_type *dest, data_type *branch1,
 /*
     Convert the given tree to a linked list structure. This assumes that
     the given size is a powersum of two.
+
+    - tree contains the array representation of the tree
+    - size is the number of elements in `tree`
+    - dims is the number of components for each data point
+    - current_level_start contains the index of the first element of tree which
+        contains an element of the current node
+    - current_level_nodes contains the number of elements in this level of the
+        tree (each recursive call multiplies it by two)
+    - start_offset contains the offset (starting from current_level_start) for
+        the root node of the subtree represented by this recursive call.
 */
-inline KNode *convert_to_knodes(data_type *tree, int size) { return nullptr; }
+inline KNode *convert_to_knodes(data_type *tree, int size, int dims,
+                                int current_level_start,
+                                int current_level_nodes, int start_offset) {
+  if (tree != nullptr && current_level_start < size) {
+    int next_level_start = current_level_start + current_level_nodes * dims;
+    int next_level_nodes = current_level_nodes * 2;
+    int next_start_offset = start_offset * 2;
+
+    KNode *left = convert_to_knodes(tree, size, dims, next_level_start,
+                                    next_level_nodes, next_start_offset);
+    KNode *right = convert_to_knodes(tree, size, dims, next_level_start,
+                                     next_level_nodes, next_start_offset + 1);
+
+    return new KNode(tree + current_level_start + start_offset * dims,
+                            left, right, current_level_start == 0);
+  } else {
+    return nullptr;
+  }
+}
 
 #endif // UTILS_H

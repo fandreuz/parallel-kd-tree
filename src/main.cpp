@@ -7,7 +7,7 @@
 #define SIZE 6
 #define DIMS 2
 
-void print(data_type *tree, int size);
+void print(KNode *tree, int depth);
 
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
@@ -34,16 +34,19 @@ int main(int argc, char **argv) {
   int size = SIZE;
 
   double start_time = MPI_Wtime();
-  data_type *tree = generate_kd_tree(dt, size, DIMS);
+  KNode *tree = generate_kd_tree(dt, size, DIMS);
   double end_time = MPI_Wtime();
+
+  // we can now delete the data safely
+  delete[] dt;
 
 #ifdef DEBUG
   if (rank == 0) {
-    delete[] dt;
-    print(tree, size);
-    delete[] tree;
+    print(tree, 0);
   }
 #endif
+
+  delete tree;
 
 #ifdef TIME
   if (rank == 0) {
@@ -54,35 +57,38 @@ int main(int argc, char **argv) {
   MPI_Finalize();
 }
 
-void print(data_type *tree, int size) {
-  int next_powersum = 1;
-  int current_multiplier = 1;
-  int counter = 0;
-  for (int i = 0; i < size; i++) {
-    std::cout << "(";
-    for (int j = 0; j < DIMS; j++) {
-      if (j > 0)
-        std::cout << ",";
+void print_node(KNode *node) {
+  std::cout << "(";
+  for (int i = 0; i < dims; i++) {
+    if (i > 0)
+      std::cout << ",";
+    if (node->get_data(i) == std::numeric_limits<int>::min()) {
+      std::cout << "n/a";
+      break;
+    } else
+      std::cout << node->get_data(i);
+  }
+  std::cout << ")";
+}
 
-      if (tree[i * DIMS + j] == std::numeric_limits<int>::min()) {
-        std::cout << "n/a";
-        break;
-      } else
-        std::cout << tree[i * DIMS + j];
-    }
-    std::cout << ")";
+void print(KNode *tree, int depth) {
+  std::cout << "depth = " << depth << std::endl;
 
-    if (i + 1 == next_powersum) {
-      std::cout << std::endl;
-      current_multiplier *= 2;
-      next_powersum += current_multiplier;
-      counter = 0;
-    } else {
-      counter++;
-      if (counter == 2) {
-        std::cout << " | ";
-        counter = 0;
-      }
-    }
+  print_node(tree);
+  std::cout << std::endl;
+
+  if (tree->get_left()) {
+    std::cout << "left node of ";
+    print_node(tree);
+    std::cout << " -- ";
+
+    print(tree->get_left(), depth + 1);
+  }
+  if (tree->get_right()) {
+    std::cout << "right node of ";
+    print_node(tree);
+    std::cout << " -- ";
+
+    print(tree->get_right(), depth + 1);
   }
 }

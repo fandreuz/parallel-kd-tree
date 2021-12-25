@@ -33,7 +33,7 @@ std::vector<int> children;
   point.
   size is the dimension of the dataset, i.e. len(data) / dms.
 */
-data_type *generate_kd_tree(data_type *data, int &size, int dms) {
+KNode *generate_kd_tree(data_type *data, int &size, int dms) {
   // we can save dims as a global variable since it is not going to change. it
   // is also constant for all the processes.
   dims = dms;
@@ -124,7 +124,8 @@ data_type *generate_kd_tree(data_type *data, int &size, int dms) {
 #endif
 
   build_tree(array, size, depth);
-  return finalize(size);
+  data_type* tree = finalize(size);
+  return convert_to_knodes(tree, size, dims, 0, 1, 0);
 }
 
 /*
