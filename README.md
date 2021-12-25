@@ -42,6 +42,23 @@ independently. The left branch is kept by `rank0`.
 This same strategy is then employed recursively by `rank0` and `rank1`, until
 the tree is completed.
 
+## Example
+Given the following input:
+```
+(0,-2,-4) / (1,-1,-3) / (2,0,-2) / (3,1,-1) / (4,2,0)
+```
+
+The k-d tree produced is:
+```
+└──(2,0,-2)
+    ├──(0,-2,-4)
+    │   ├──(n/a)
+    │   └──(1,-1,-3)
+    └──(3,1,-1)
+        ├──(n/a)
+        └──(4,2,0)
+```
+
 ## Roadmap
 - [x] Working MPI implementation;
   - [ ] Optimize the last call to `finalize()`: maybe it's not needed (since we traverse the tree in `utils.convert_to_knodes()`);
