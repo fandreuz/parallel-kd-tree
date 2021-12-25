@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 
 #ifdef DEBUG
   if (rank == 0) {
-    print(tree, 0);
+    print(tree);
   }
 #endif
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   MPI_Finalize();
 }
 
-void print_node(KNode *node) {
+void print_node(const KNode *node) {
   std::cout << "(";
   for (int i = 0; i < dims; i++) {
     if (i > 0)

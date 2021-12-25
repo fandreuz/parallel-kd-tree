@@ -48,9 +48,9 @@ public:
     delete right;
   }
 
-  data_type get_data(int i) { return data[i]; }
-  KNode *get_left() { return left; }
-  KNode *get_right() { return right; }
+  const data_type get_data(int i) const { return data[i]; }
+  const KNode *get_left() const { return left; }
+  const KNode *get_right() const { return right; }
 };
 
 #endif // TREE_H
