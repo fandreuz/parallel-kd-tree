@@ -7,7 +7,8 @@
 #define SIZE 6
 #define DIMS 2
 
-void print(KNode *tree, int depth);
+void print(const KNode *node);
+void print(const std::string &prefix, const KNode *node, bool isLeft);
 
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
@@ -71,24 +72,20 @@ void print_node(KNode *node) {
   std::cout << ")";
 }
 
-void print(KNode *tree, int depth) {
-  std::cout << "depth = " << depth << std::endl;
+void print(const std::string &prefix, const KNode *node, bool isLeft) {
+  if (node != nullptr) {
+    std::cout << prefix;
 
-  print_node(tree);
-  std::cout << std::endl;
+    std::cout << (isLeft ? "├──" : "└──");
 
-  if (tree->get_left()) {
-    std::cout << "left node of ";
-    print_node(tree);
-    std::cout << " -- ";
+    // print the value of the node
+    print_node(node);
+    std::cout << std::endl;
 
-    print(tree->get_left(), depth + 1);
-  }
-  if (tree->get_right()) {
-    std::cout << "right node of ";
-    print_node(tree);
-    std::cout << " -- ";
-
-    print(tree->get_right(), depth + 1);
+    // enter the next tree level - left and right branch
+    print(prefix + (isLeft ? "│   " : "    "), node->get_left(), true);
+    print(prefix + (isLeft ? "│   " : "    "), node->get_right(), false);
   }
 }
+
+void print(const KNode *node) { print("", node, false); }
