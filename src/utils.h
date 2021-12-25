@@ -1,4 +1,8 @@
+#ifndef UTILS_H
+#define UTILS_H
+
 #include "data_point.h"
+#include "tree.h"
 
 #include <cstring>
 #include <limits>
@@ -92,3 +96,11 @@ inline void rearrange_branches(data_type *dest, data_type *branch1,
     nodes *= 2;
   }
 }
+
+/*
+    Convert the given tree to a linked list structure. This assumes that
+    the given size is a powersum of two.
+*/
+inline KNode *convert_to_knodes(data_type *tree, int size) { return nullptr; }
+
+#endif // UTILS_H

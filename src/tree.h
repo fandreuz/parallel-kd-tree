@@ -1,3 +1,6 @@
+#ifndef TREE_H
+#define TREE_H
+
 #ifdef MPI_VERSION
 #include <mpi.h>
 #endif
@@ -24,3 +27,5 @@ struct KNode {
   // left and right branch originating from this node
   KNode *left = nullptr, *right = nullptr;
 };
+
+#endif // TREE_H
