@@ -1,4 +1,6 @@
 #include "tree_mpi.h"
+#include <mpi.h>
+
 #include <iostream>
 #include <limits>
 
@@ -30,13 +32,24 @@ int main(int argc, char **argv) {
   }
 
   int size = SIZE;
-  data_type *tree = generate_kd_tree(dt, size, DIMS);
 
+  double start_time = MPI_Wtime();
+  data_type *tree = generate_kd_tree(dt, size, DIMS);
+  double end_time = MPI_Wtime();
+
+#ifdef DEBUG
   if (rank == 0) {
     delete[] dt;
     print(tree, size);
     delete[] tree;
   }
+#endif
+
+#ifdef TIME
+  if (rank == 0) {
+    std::cout << "# " << end_time - start_time << std::endl;
+  }
+#endif
 
   MPI_Finalize();
 }

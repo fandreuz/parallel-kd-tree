@@ -6,6 +6,9 @@ compile: main.cpp tree_mpi.cpp data_point.h
 debug: main.cpp tree_mpi.cpp data_point.h
 	mpic++ -D DEBUG -o tree_mpi data_point.h tree_mpi.cpp main.cpp
 
+time: main.cpp tree_mpi.cpp data_point.h
+	mpic++ -D TIME -O3 -o tree_mpi data_point.h tree_mpi.cpp main.cpp
+
 leaks: main.cpp tree_mpi.cpp data_point.h
 	mpic++ -static-libasan -fsanitize=address -g -D DEBUG -o tree_mpi data_point.h tree_mpi.cpp main.cpp
 
