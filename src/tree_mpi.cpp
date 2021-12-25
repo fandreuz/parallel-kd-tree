@@ -340,21 +340,6 @@ data_type *finalize(int &size) {
   int left_branch_size = serial_branch_size;
 
   if (serial_branch_size > 0) {
-    /* left_branch_buffer = new data_type[serial_branch_size * dims];
-    // this is a temp copy used to keep the data safe
-    data_type *temp_left_branch_buffer = unpack_risky_array(
-        serial_splits + 1, serial_branch_size - 1, dims, initialized + 1);
-
-    // we copy the first serial splitting item into left_branch_buffer
-    std::memcpy(left_branch_buffer, serial_splits[0].data(),
-                dims * sizeof(data_type));
-
-    int branches_size = (serial_branch_size - 1) / 2;
-    // we skip the first element since it is going to stay there
-    rearrange_branches(left_branch_buffer + dims, temp_left_branch_buffer,
-                       temp_left_branch_buffer + branches_size * dims,
-                       branches_size, dims); */
-
     left_branch_buffer = unpack_risky_array(serial_splits, serial_branch_size,
                                             dims, initialized);
   }
