@@ -4,14 +4,15 @@
 #include <iostream>
 #include <limits>
 
-#define SIZE 6
-#define DIMS 2
-
 void print(const KNode<data_type> *node);
-void print(const std::string &prefix, const KNode<data_type> *node, bool isLeft);
+void print(const std::string &prefix, const KNode<data_type> *node,
+           bool isLeft);
 
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
+
+  int SIZE = atoi(getenv("KDTREE_SIZE"));
+  int DIMS = atoi(getenv("KDTREE_DIMS"));
 
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -21,8 +22,9 @@ int main(int argc, char **argv) {
     dt = new data_type[SIZE * DIMS];
 
     for (int i = 0; i < SIZE; i++) {
-      dt[i * 2] = 9 - i;
-      dt[i * 2 + 1] = 1 + i;
+      for (int j = 0; j < DIMS; j++) {
+        dt[i * DIMS + j] = i - 2 * j;
+      }
     }
 
     for (int i = 0; i < SIZE * DIMS; i++) {
@@ -41,7 +43,7 @@ int main(int argc, char **argv) {
   // we can now delete the data safely
   delete[] dt;
 
-#ifdef DEBUG
+#ifdef OUTPUT
   if (rank == 0) {
     print(tree);
   }
