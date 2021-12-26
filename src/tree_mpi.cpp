@@ -73,8 +73,8 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
 
     // receive the number of items in the branch assigned to this process, and
     // the depth of the tree at this point
-    int br_size_depth_parent[3];
-    MPI_Recv(&br_size_depth_parent, 3, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
+    int br_size_depth_parent[4];
+    MPI_Recv(&br_size_depth_parent, 4, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
 
     // number of data points in the branch
@@ -88,12 +88,14 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
     depth = br_size_depth_parent[1];
     // rank of the parent which "started" (i.e. waked) this process
     parent = br_size_depth_parent[2];
+    // dimensionality of the data points
+    dims = br_size_depth_parent[3];
 
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: went to sleep" << std::endl;
 #endif
 
-    data = new data_type[size * dms];
+    data = new data_type[size * dims];
     // receive the data in the branch assigned to this process
     MPI_Recv(data, size * dims, mpi_data_type, MPI_ANY_SOURCE, MPI_ANY_TAG,
              MPI_COMM_WORLD, &status);
@@ -126,7 +128,7 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
   build_tree(array, size, depth);
   // size might be changed by finalize (the actual size of the tree may not
   // be equal to the original size of the dataset)
-  data_type* tree = finalize(size);
+  data_type *tree = finalize(size);
   return convert_to_knodes(tree, size, dims, 0, 1, 0);
 }
 
@@ -201,9 +203,9 @@ void build_tree(DataPoint *array, int size, int depth) {
     if (size <= 1 && next_depth == max_depth + 1 && rank < surplus_processes) {
       int right_process_rank = n_processes - surplus_processes + rank;
 
-      int right_branch_data[3];
+      int right_branch_data[4];
       right_branch_data[0] = 0;
-      MPI_Send(right_branch_data, 3, MPI_INT, right_process_rank, 0,
+      MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank, 0,
                MPI_COMM_WORLD);
     }
   } else {
@@ -230,11 +232,12 @@ void build_tree(DataPoint *array, int size, int depth) {
               << size << ") to rank" << right_process_rank << std::endl;
 #endif
 
-    int right_branch_data[3];
+    int right_branch_data[4];
     right_branch_data[0] = right_branch_size;
     right_branch_data[1] = next_depth;
     right_branch_data[2] = rank;
-    MPI_Send(right_branch_data, 3, MPI_INT, right_process_rank, 0,
+    right_branch_data[3] = dims;
+    MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank, 0,
              MPI_COMM_WORLD);
 
     data_type *right_branch =

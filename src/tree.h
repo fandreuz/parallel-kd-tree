@@ -10,6 +10,7 @@
 
 #if !defined(DOUBLE_PRECISION)
 #define data_type float
+#define string_converter std::stof
 
 #ifdef MPI_VERSION
 #define mpi_data_type MPI_FLOAT
@@ -17,6 +18,7 @@
 
 #else
 #define data_type double
+#define string_converter std::stod
 
 #ifdef MPI_VERSION
 #define mpi_data_type MPI_FLOAT

@@ -1,50 +1,21 @@
+#include "file_reader.h"
 #include "tree_mpi.h"
-#include <mpi.h>
 
-#include <iostream>
+#include <mpi.h>
 
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
 
-  int SIZE = -1, DIMS = -1;
-
-  if (getenv("KDTREE_SIZE") == NULL)
-    SIZE = 10;
-  else
-    SIZE = atoi(getenv("KDTREE_SIZE"));
-  if (getenv("KDTREE_DIMS") == NULL)
-    DIMS = 3;
-  else
-    DIMS = atoi(getenv("KDTREE_DIMS"));
-
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+  std::string filename = argc > 1 ? argv[1] : "../benchmark/benchmark1.csv";
+
+  int SIZE = -1, DIMS = -1;
   data_type *dt = nullptr;
-  if (rank == 0) {
-    dt = new data_type[SIZE * DIMS];
 
-    for (int i = 0; i < SIZE; i++) {
-      for (int j = 0; j < DIMS; j++) {
-        dt[i * DIMS + j] = i - 2 * j;
-      }
-    }
-
-#ifdef DEBUG
-    for (int i = 0; i < SIZE * DIMS; i++) {
-      if (i % DIMS == 0)
-        std::cout << "(";
-      std::cout << dt[i];
-      if (i % DIMS == DIMS - 1) {
-        std::cout << ")";
-        if (i < SIZE * DIMS - 1)
-          std::cout << " / ";
-      } else
-        std::cout << ",";
-    }
-    std::cout << std::endl;
-#endif
-  }
+  if (rank == 0)
+    dt = read_file(filename, &SIZE, &DIMS);
 
 #ifdef TIME
   double start_time = MPI_Wtime();
