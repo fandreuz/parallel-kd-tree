@@ -1,19 +1,47 @@
+# Makefile for the K-D tree.
+#
+# make compile	 ----> Compile the source code.
+# make debug	 ----> Show both the output and debug messages during the
+# 				       construction of the tree.
+# make output    ----> Show the binary tree (and nothing else).
+# make time      ----> Produces an executable which prints only the time taken
+#				 	   to build the tree.
+# make leaks	 ----> Produces an executable which can be used to find find
+#					   memory leaks.
+# make mpidebug  ----> Enables debugging via gdb (the rank of the debugged
+#					   process must be set via the environment variable
+#					   MPI_DEBUG_RANK).
+# make clean	 ----> Clean the folder (removes executable/precompiled headers
+#		   	           files)
+
 .DEFAULT_GOAL := output
 
+MAIN = main.x
+
+# eliminate default suffixes
+.SUFFIXES:
+SUFFIXES=
+
+.SUFFIXES: .cpp .x .h
+
 compile: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -O3 -o tree_mpi data_point.h tree_mpi.cpp main.cpp
+	mpic++ -std=c++14 -Wall -Wextra -O3 -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
 
 debug: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -D DEBUG -D OUTPUT -o tree_mpi data_point.h tree_mpi.cpp main.cpp
+	mpic++ -std=c++14 -Wall -Wextra -D DEBUG -D OUTPUT -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
 
 output: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -D OUTPUT -o tree_mpi data_point.h tree_mpi.cpp main.cpp
+	mpic++ -std=c++14 -Wall -Wextra -D OUTPUT -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
 
 time: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -D TIME -O3 -o tree_mpi data_point.h tree_mpi.cpp main.cpp
+	mpic++ -std=c++14 -Wall -Wextra -D TIME -O3 -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
 
 leaks: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -static-libasan -fsanitize=address -g -D DEBUG -o tree_mpi data_point.h tree_mpi.cpp main.cpp
+	mpic++ -std=c++14 -Wall -Wextra -static-libasan -fsanitize=address -g -D DEBUG -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
 
 mpidebug: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -g -D DEBUG -D MPI_DEBUG -o tree_mpi data_point.h tree_mpi.cpp main.cpp
+	mpic++ -std=c++14 -Wall -Wextra -g -D DEBUG -D MPI_DEBUG -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
+
+clean:
+	rm *.x
+	rm *.gch
