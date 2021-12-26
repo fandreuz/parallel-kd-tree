@@ -14,7 +14,7 @@
     of data_type which holds the data points. `dims` consecutive values inside
     the returned array represent a data point.
 */
-data_type *read_file(std::string filename, int *size, int *dims) {
+inline data_type *read_file(std::string filename, int *size, int *dims) {
   std::ifstream file(filename);
 
   // local variable which holds the last known number of dimensions per data
