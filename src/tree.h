@@ -1,6 +1,9 @@
 #ifndef TREE_H
 #define TREE_H
 
+#include <iostream>
+#include <limits>
+
 #ifdef MPI_VERSION
 #include <mpi.h>
 #endif
@@ -21,10 +24,11 @@
 
 #endif
 
-template <typename T>
-class KNode {
+template <typename T> class KNode {
   // point used to split the tree
   T *data;
+  int dims;
+
   // left and right branch originating from this node
   KNode<T> *left = nullptr, *right = nullptr;
 
@@ -34,9 +38,41 @@ class KNode {
   // after that we should not delete anything else in children
   bool is_root = false;
 
+  void print_node_values(std::ostream &os) const {
+    os << "(";
+    for (int i = 0; i < dims; i++) {
+      if (i > 0)
+        os << ",";
+      if (data[i] == std::numeric_limits<int>::min()) {
+        os << "n/a";
+        break;
+      } else
+        os << data[i];
+    }
+    os << ")";
+  }
+
+  void print_tree(std::ostream &os, const std::string &prefix,
+                  bool isLeft) const {
+    os << prefix;
+
+    os << (isLeft ? "├──" : "└──");
+
+    // print the value of the node
+    print_node_values(os);
+    os << std::endl;
+
+    // enter the next tree level - left and right branch
+    if (left)
+      left->print_tree(os, prefix + (isLeft ? "│   " : "    "), true);
+    if (right)
+      right->print_tree(os, prefix + (isLeft ? "│   " : "    "), false);
+  }
+
 public:
-  KNode(data_type *d, KNode<T> *l, KNode<T> *r, bool root) {
+  KNode(data_type *d, int dms, KNode<T> *l, KNode<T> *r, bool root) {
     data = d;
+    dims = dms;
     left = l;
     right = r;
     is_root = root;
@@ -52,6 +88,11 @@ public:
   const T get_data(int i) const { return data[i]; }
   const KNode<T> *get_left() const { return left; }
   const KNode<T> *get_right() const { return right; }
+
+  friend std::ostream &operator<<(std::ostream &os, const KNode<T> &node) {
+    node.print_tree(os, "", false);
+    return os;
+  }
 };
 
 #endif // TREE_H

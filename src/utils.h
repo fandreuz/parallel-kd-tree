@@ -127,11 +127,11 @@ inline KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
 
     return new KNode<data_type>(tree + current_level_start +
                                     start_offset * dims,
-                                left, right, current_level_start == 0);
+                                dims, left, right, current_level_start == 0);
   } else
     return new KNode<data_type>(tree + current_level_start +
                                     start_offset * dims,
-                                nullptr, nullptr, false);
+                                dims, nullptr, nullptr, false);
 }
 
 #endif // UTILS_H

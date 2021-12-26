@@ -2,11 +2,6 @@
 #include <mpi.h>
 
 #include <iostream>
-#include <limits>
-
-void print(const KNode<data_type> *node);
-void print(const std::string &prefix, const KNode<data_type> *node,
-           bool isLeft);
 
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
@@ -51,60 +46,29 @@ int main(int argc, char **argv) {
 #endif
   }
 
+#ifdef TIME
   double start_time = MPI_Wtime();
+#endif
+
   KNode<data_type> *tree = generate_kd_tree(dt, SIZE, DIMS);
-  double end_time = MPI_Wtime();
+
+#ifdef TIME
+  if (rank == 0) {
+    double end_time = MPI_Wtime();
+    std::cout << "# " << end_time - start_time << std::endl;
+  }
+#endif
 
   // we can now delete the data safely
   delete[] dt;
 
 #ifdef OUTPUT
   if (rank == 0) {
-    print(tree);
+    std::cout << *tree;
   }
 #endif
 
   delete tree;
 
-#ifdef TIME
-  if (rank == 0) {
-    std::cout << "# " << end_time - start_time << std::endl;
-  }
-#endif
-
   MPI_Finalize();
 }
-
-void print_node(const KNode<data_type> *node) {
-  std::cout << "(";
-  for (int i = 0; i < dims; i++) {
-    if (i > 0)
-      std::cout << ",";
-    if (node->get_data(i) == std::numeric_limits<int>::min()) {
-      std::cout << "n/a";
-      break;
-    } else
-      std::cout << node->get_data(i);
-  }
-  std::cout << ")";
-}
-
-// implementation taken from https://stackoverflow.com/a/51730733/6585348
-void print(const std::string &prefix, const KNode<data_type> *node,
-           bool isLeft) {
-  if (node != nullptr) {
-    std::cout << prefix;
-
-    std::cout << (isLeft ? "├──" : "└──");
-
-    // print the value of the node
-    print_node(node);
-    std::cout << std::endl;
-
-    // enter the next tree level - left and right branch
-    print(prefix + (isLeft ? "│   " : "    "), node->get_left(), true);
-    print(prefix + (isLeft ? "│   " : "    "), node->get_right(), false);
-  }
-}
-
-void print(const KNode<data_type> *node) { print("", node, false); }
