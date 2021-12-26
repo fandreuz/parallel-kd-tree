@@ -50,6 +50,8 @@ inline data_type *read_file(std::string filename, int *size, int *dims) {
         lines_buffer.push_back(row_buffer[i]);
     }
     file.close();
+  } else {
+    throw std::invalid_argument("File not found.");
   }
 
   int temp_size = lines_buffer.size() / temp_dims;
