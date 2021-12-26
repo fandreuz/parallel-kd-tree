@@ -59,7 +59,7 @@ The k-d tree produced is:
         └──(4,2,0)
 ```
 
-## Usage
+## Compile
 Download the source code with `git clone https://github.com/fAndreuzzi/kd-tree.git`,
 then navigate to the `src` folder and compile the source using the makefile.
 The following recipes are available:
@@ -74,8 +74,27 @@ The following recipes are available:
   of the process to be controlled via gdb must be set via the environment
   variable `MPI_DEBUG_RANK`).
 
-The default input is generated in `main.cpp`, you can control its size and
-dimensions via the environment variables `KDTREE_SIZE` and `KDTREE_DIMS`.
+## Usage
+You can run the executable `tree_mpi.x` generated in the step
+[Compile](#compile) using the usual command `mpirun`:
+
+### Serial
+`mpirun -np 1 tree_mpi.x`
+
+### 10 processors
+`mpirun -np 10 tree_mpi.x`
+
+### Specify a dataset
+By default the dataset used is the file `benchmark/benchmar1.csv`. You can
+specify your own dataset via a command line argument. Valid datasets are CSV
+files where each data point has the same number of components (one data point
+per row).
+
+For example, the following command runs the k-d tree algorithm on the dataset
+inside the file `foo.csv` in the current directory:
+
+`mpirun -np 10 tree_mpi.x foo.csv`
+
 
 ## Roadmap
 - [x] Working MPI implementation;
