@@ -1,4 +1,4 @@
-# k-d tree
+# Parallel k-d tree
 Implementation of a **parallel** *k-d tree* using MPI and OpenMP.
 
 ## Summary
