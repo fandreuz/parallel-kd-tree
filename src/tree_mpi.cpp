@@ -11,28 +11,50 @@
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
 #define TAG_RIGHT_PROCESS_N_ITEMS 11
 
+// rank of the parent process of this process
 int parent = -1;
-int dims;
-int rank;
-int n_processes;
+
+// number of components for each data point
+int dims = -1;
+
+// rank of this process
+int rank = -1;
+
+// number of MPI processes available
+int n_processes = -1;
+
+// maximum depth of the tree at which we can parallelize. after this depth no
+// more right-branches can be assigned to non-surplus processes
 int max_depth = 0;
-int surplus_processes;
+
+// number of additional processes that are not enough to parallelize an entire
+// level of the tree, they are assigned left-to-right until there are no more
+// surplus processes
+int surplus_processes = 0;
+
+// number of items assigned serially (i.e. non-parallelizable) to this process
 int serial_branch_size = 0;
+
+// DataPoint used to split a branch assigned to this process. this process then
+// received the left branch resulting from the split.
 std::vector<DataPoint> parallel_splits;
+
+// DataPoints in the serial branch assigned to this process. see also
+// build_tree_serial
 DataPoint *serial_splits;
+
+// if the i-th item is true, the i-th item in serial_splits is initialized
 bool *initialized;
+
+// children of this process, i.e. processes that received a right branch from
+// this process
 std::vector<int> children;
 
-/*
-  Generate a kd tree from the given data. If this process is not the main
-  process, this function blocks the process until another process wakes
-  this process with something to process.
+void build_tree(DataPoint *array, int size, int depth);
+void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
+                       int region_start_index, int branch_starting_index);
+data_type *finalize(int &new_size);
 
-  k = dmd
-  data is a 1D array of data such that k consecutive items constitute a data
-  point.
-  size is the dimension of the dataset, i.e. len(data) / dms.
-*/
 KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
   // we can save dims as a global variable since it is not going to change. it
   // is also constant for all the processes.
