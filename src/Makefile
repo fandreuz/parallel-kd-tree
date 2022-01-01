@@ -17,7 +17,7 @@
 .DEFAULT_GOAL := output
 MAIN = main.x
 FLAGS = -std=c++14 -Wall -Wextra
-SOURCE = data_point.cpp tree_mpi.cpp main.cpp
+SOURCE = data_point.cpp tree_mpi.cpp main.cpp file_reader.cpp tree_printer.cpp tree.h utils.cpp
 # eliminate default suffixes
 .SUFFIXES:
 SUFFIXES=

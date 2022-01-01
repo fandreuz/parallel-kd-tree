@@ -1,5 +1,6 @@
 #include "file_reader.h"
 #include "tree_mpi.h"
+#include "tree_printer.h"
 
 #include <mpi.h>
 
