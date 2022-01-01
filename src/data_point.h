@@ -2,14 +2,8 @@
 #define DATAPOINT_H
 
 #include <cstring>
-
-#if !defined(DOUBLE_PRECISION)
-#define mpi_data_type MPI_FLOAT
-#define data_type float
-#else
-#define mpi_data_type MPI_DOUBLE
-#define data_type double
-#endif
+// this is needed for the value of data_type
+#include "tree.h"
 
 // represents a data point
 class DataPoint {
