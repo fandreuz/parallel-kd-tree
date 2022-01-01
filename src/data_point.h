@@ -17,63 +17,17 @@ class DataPoint {
   int data_dimension = -1;
 
 public:
-  inline DataPoint(data_type *dt, int dims) {
-    // we need to copy the values since a call to std::nth_element changes the
-    // order of the array, therefore pointers do not point anymore to the
-    // values we expected
-    values = new data_type[dims];
-
-    std::memcpy(values, dt, dims * sizeof(data_type));
-
-    data_dimension = dims;
-  }
+  DataPoint(data_type *dt, int dims);
 
   // move constructor
-  inline DataPoint(DataPoint &&other) {
-    if (this != &other) {
-      values = other.values;
-
-      data_dimension = other.data_dimension;
-
-      other.values = nullptr;
-      other.data_dimension = -1;
-    }
-  }
-
+  DataPoint(DataPoint &&other);
   // move assignment
-  DataPoint &operator=(DataPoint &&other) {
-    if (this != &other) {
-      data_type *vls = other.values;
-      delete[] values;
-      values = vls;
+  DataPoint &operator=(DataPoint &&other);
 
-      data_dimension = other.data_dimension;
-
-      other.values = nullptr;
-      other.data_dimension = -1;
-    }
-
-    return *this;
-  }
-
-  inline const data_type get(int index) const {
-#ifdef NONSAFE
-    if (index < data_dimension)
-      return values[index];
-    else
-      return -1;
-#else
-    return values[index];
-#endif
-  }
-
+  const data_type get(int index) const { return values[index]; }
   data_type *data() { return values; }
 
-  ~DataPoint() {
-    delete[] values;
-    values = nullptr;
-    data_dimension = -1;
-  }
+  ~DataPoint();
 };
 
 struct DataPointCompare {

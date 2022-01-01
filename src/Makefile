@@ -24,23 +24,23 @@ SUFFIXES=
 
 .SUFFIXES: .cpp .x .h
 
-compile: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -std=c++14 -Wall -Wextra -O3 -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
+compile: main.cpp tree_mpi.cpp data_point.cpp
+	mpic++ -std=c++14 -Wall -Wextra -O3 data_point.h tree_mpi.cpp main.cpp -o tree_mpi.x
 
-debug: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -std=c++14 -Wall -Wextra -D DEBUG -D OUTPUT -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
+debug: main.cpp tree_mpi.cpp data_point.cpp
+	mpic++ -std=c++14 -Wall -Wextra -D DEBUG -D OUTPUT data_point.h tree_mpi.cpp main.cpp -o tree_mpi.x
 
-output: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -std=c++14 -Wall -Wextra -D OUTPUT -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
+output: main.cpp tree_mpi.cpp data_point.cpp
+	mpic++ -std=c++14 -Wall -Wextra -D OUTPUT data_point.cpp tree_mpi.cpp main.cpp -o tree_mpi.x
 
-time: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -std=c++14 -Wall -Wextra -D TIME -O3 -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
+time: main.cpp tree_mpi.cpp data_point.cpp
+	mpic++ -std=c++14 -Wall -Wextra -D TIME -O3 data_point.cpp tree_mpi.cpp main.cpp -o tree_mpi.x
 
-leaks: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -std=c++14 -Wall -Wextra -static-libasan -fsanitize=address -g -D DEBUG -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
+leaks: main.cpp tree_mpi.cpp data_point.cpp
+	mpic++ -std=c++14 -Wall -Wextra -static-libasan -fsanitize=address -g -D DEBUG data_point.cpp tree_mpi.cpp main.cpp -o tree_mpi.x
 
-mpidebug: main.cpp tree_mpi.cpp data_point.h
-	mpic++ -std=c++14 -Wall -Wextra -g -D DEBUG -D MPI_DEBUG -o tree_mpi.x data_point.h tree_mpi.cpp main.cpp
+mpidebug: main.cpp tree_mpi.cpp data_point.cpp
+	mpic++ -std=c++14 -Wall -Wextra -g -D DEBUG -D MPI_DEBUG data_point.cpp tree_mpi.cpp main.cpp -o tree_mpi.x
 
 clean:
 	rm *.x
