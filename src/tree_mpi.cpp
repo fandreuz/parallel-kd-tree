@@ -1,15 +1,26 @@
 #include "tree_mpi.h"
 
-#if !defined(DOUBLE_PRECISION)
-#define mpi_data_type MPI_FLOAT
-#define data_type float
-#else
-#define mpi_data_type MPI_DOUBLE
-#define data_type double
-#endif
-
+/**
+ * @def
+ * @brief Communicate to the parent MPI process that we're over with the branch
+ *          assigned to this process, and that we are sending back the results.
+ */
 #define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
+/**
+ * @def
+ * @brief Communicate to the parent MPI process the number of data point we are
+ *          going to send.
+ */
 #define TAG_RIGHT_PROCESS_N_ITEMS 11
+/**
+ * @def
+ * @brief Communicate to a child process the data points in the branch it is
+ *          assigned to. Attached to this communication there should be some
+ *          info regarding the branch (number of data points, depth of the tree
+ *          at this point, rank of the parent, number of components in the
+ *          data points).
+ */
+#define TAG_RIGHT_PROCESS_START 12
 
 // rank of the parent process of this process
 int parent = -1;
@@ -96,8 +107,8 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
     // receive the number of items in the branch assigned to this process, and
     // the depth of the tree at this point
     int br_size_depth_parent[4];
-    MPI_Recv(&br_size_depth_parent, 4, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,
-             MPI_COMM_WORLD, &status);
+    MPI_Recv(&br_size_depth_parent, 4, MPI_INT, MPI_ANY_SOURCE,
+             TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD, &status);
 
     // number of data points in the branch
     size = br_size_depth_parent[0];
@@ -227,8 +238,8 @@ void build_tree(DataPoint *array, int size, int depth) {
 
       int right_branch_data[4];
       right_branch_data[0] = 0;
-      MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank, 0,
-               MPI_COMM_WORLD);
+      MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank,
+               TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD);
     }
   } else {
     int dimension = select_splitting_dimension(depth);
@@ -259,8 +270,8 @@ void build_tree(DataPoint *array, int size, int depth) {
     right_branch_data[1] = next_depth;
     right_branch_data[2] = rank;
     right_branch_data[3] = dims;
-    MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank, 0,
-             MPI_COMM_WORLD);
+    MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank,
+             TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD);
 
     data_type *right_branch =
         unpack_array(array + split_point_idx + 1, right_branch_size, dims);
