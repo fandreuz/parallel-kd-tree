@@ -1,5 +1,14 @@
 #include "file_reader.h"
 
+/*
+    This function reads the file row by row, and for each row stores the
+    numbers found in an std::vector. The accepted dimension of each data point
+    is the dimension of the data point in the first row of the file (a check
+    is performed for each row though).
+
+    When there are no more rows, we copy the content of the vector on a 1D
+    array (via std::memcpy) and return that 1D array to the user.
+ */
 data_type *read_file(std::string filename, int *size, int *dims) {
   std::ifstream file(filename);
 
@@ -7,6 +16,8 @@ data_type *read_file(std::string filename, int *size, int *dims) {
   // point. used to check that all data points have the same number of
   // components
   int temp_dims = -1;
+
+  constexpr char separator = ',';
 
   std::vector<data_type> lines_buffer;
   if (file.is_open()) {
@@ -17,7 +28,7 @@ data_type *read_file(std::string filename, int *size, int *dims) {
       int start = 0;
       for (int i = 1; i < line.length(); ++i) {
         // we found a component
-        if (line[i] == ',') {
+        if (line[i] == separator) {
           row_buffer.push_back(string_converter(line.substr(start, i)));
           start = i + 1;
         }

@@ -7,11 +7,26 @@
 #include <string>
 #include <vector>
 
-/*
-    Read a CSV file and find the dimensionality of the data points inside.
-    This function modifies the given pointer to size and dims according to the
-    values determined after parsing the file. It also returns an 1D array
-    of data_type which holds the data points. `dims` consecutive values inside
-    the returned array represent a data point.
-*/
+/**
+ * @brief Extract a dataset of k-dimensional data points from a CSV file.
+ *
+ * Extract a dataset of k-dimensional data points from the rows of a given
+ * CSV file. Each row should contain exactly one data point, the number of
+ * components for each data point is assumed to be constant. The separator
+ * between the components is assumed to be a single comma (',').
+ *
+ * This function also sets the variables `size` and `dims` to retrieve
+ * respectively the number of data points in the dataset and the number of
+ * components for each data point.
+ *
+ * @param filename Path (relative or absolute) to the CSV file.
+ * @param size     A pointer to a variable which is going to contain the number
+ *                  of data points in the dataset when this function returns
+ *                  succesfully.
+ * @param dims     A pointer to a variable which is going to contain the number
+ *                  of components for each data point when this function returns
+ *                  succesfully.
+ * @return data_type* A 1D array whose size is `size*dims`, where `dims`
+ *                      consecutive items represent a data point.
+ */
 data_type *read_file(std::string filename, int *size, int *dims);
