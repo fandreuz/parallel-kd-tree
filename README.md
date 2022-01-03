@@ -100,7 +100,7 @@ inside the file `foo.csv` in the current directory:
 - [x] Working MPI implementation;
   - [ ] Optimize the last call to `finalize()`: maybe it's not needed (since we traverse the tree in `utils.convert_to_knodes()`);
   - [ ] Fix some memory leaks.
-- [ ] Working MP implementation;
+- [ ] Working OpenMP implementation;
 - [ ] Visual representation of the tree;
 - [ ] Performance evaluation.
 - [ ] Comparison against some serial implementation(?)
