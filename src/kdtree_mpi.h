@@ -1,6 +1,7 @@
 #include "data_point.h"
 #include "tree.h"
 #include "utils.h"
+#include "process_utils.h"
 
 #include <algorithm>
 #include <cstring>

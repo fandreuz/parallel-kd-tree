@@ -33,7 +33,7 @@ data_type *unpack_array(DataPoint *array, int size, int dims) {
 
 // unpack an array which may contain uninitialized items
 data_type *unpack_risky_array(DataPoint *array, int size, int dims,
-                                     bool *initialized) {
+                              bool *initialized) {
   data_type *unpacked = new data_type[size * dims];
   for (int i = 0; i < size; ++i) {
     if (initialized[i]) {
@@ -58,9 +58,8 @@ data_type *unpack_risky_array(DataPoint *array, int size, int dims,
 
   Remember to add a split point before this function call (if you need to).
 */
-void rearrange_branches(data_type *dest, data_type *branch1,
-                               data_type *branch2, int branches_size,
-                               int dims) {
+void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
+                        int branches_size, int dims) {
   int already_added = 0;
   // number of nodes in each branch (left and right)at the current level of
   // the tree
@@ -98,9 +97,8 @@ void rearrange_branches(data_type *dest, data_type *branch1,
         the root node of the subtree represented by this recursive call.
 */
 KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
-                                           int current_level_start,
-                                           int current_level_nodes,
-                                           int start_offset) {
+                                    int current_level_start,
+                                    int current_level_nodes, int start_offset) {
   int next_level_start = current_level_start + current_level_nodes * dims;
   int next_level_nodes = current_level_nodes * 2;
   int next_start_offset = start_offset * 2;
@@ -119,3 +117,5 @@ KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
                                     start_offset * dims,
                                 dims, nullptr, nullptr, false);
 }
+
+inline int select_splitting_dimension(int depth) { return depth % dims; }

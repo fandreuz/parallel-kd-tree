@@ -116,4 +116,12 @@ KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
                                     int current_level_start,
                                     int current_level_nodes, int start_offset);
 
+/**
+ * @brief Select an axis to be used for splitting a branch of the tree.
+ *
+ * @param depth The depth of the tree at this point, might be used in order
+ *                to balance the choice of the axes.
+ */
+inline int select_splitting_dimension(int depth);
+
 #endif // UTILS_H

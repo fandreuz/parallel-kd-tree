@@ -52,7 +52,7 @@ std::vector<DataPoint> parallel_splits;
 
 // DataPoints in the serial branch assigned to this process. see also
 // build_tree_serial
-DataPoint *serial_splits;
+DataPoint *serial_splits = nullptr;
 
 // if the i-th item is true, the i-th item in serial_splits is initialized
 bool *initialized;
@@ -89,8 +89,8 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
 
-  max_depth = log2((double)n_processes);
-  surplus_processes = n_processes - (int)pow(2.0, (double)max_depth);
+  max_depth = compute_max_depth(n_processes);
+  surplus_processes = compute_n_surplus_processes(n_processes, max_depth);
 #ifdef DEBUG
   if (rank == 0) {
     std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
@@ -180,12 +180,6 @@ inline int sort_and_split(DataPoint *array, int size, int axis) {
   // if size is 2 we want to return the first element (the smallest one), since
   // it will be placed into the first empty spot in serial_split
   return median_idx;
-}
-
-inline int select_splitting_dimension(int depth) { return depth % dims; }
-
-inline int next_process_rank(int next_depth) {
-  return rank + pow(2.0, max_depth - next_depth);
 }
 
 /*
