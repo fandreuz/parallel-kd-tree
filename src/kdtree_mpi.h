@@ -1,7 +1,7 @@
 #include "data_point.h"
+#include "process_utils.h"
 #include "tree.h"
 #include "utils.h"
-#include "process_utils.h"
 
 #include <algorithm>
 #include <cstring>
@@ -12,9 +12,9 @@
 #include <vector>
 
 /**
- * @brief Generate a k-d tree a set of k-dimensional data.
+ * @brief Generate a k-d tree a set of k-dimensional data using MPI.
  *
- * Generate a k-d tree from the given `data`.
+ * Generate a k-d tree from the given `data` using MPI.
  *
  * If this process is not the main MPI process (i.e. it does not rank 0), the
  * process freezes until another thread sends some work to perform. The control
