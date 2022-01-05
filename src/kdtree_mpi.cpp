@@ -229,10 +229,8 @@ void build_tree(DataPoint *array, int size, int depth) {
 
     parallel_splits.push_back(std::move(array[split_point_idx]));
 
-    int right_process_rank =
-        (next_depth < max_depth + 1) * next_process_rank(next_depth) +
-        (next_depth == max_depth + 1) * (rank < surplus_processes) *
-            (n_processes - surplus_processes + rank);
+    int right_process_rank = compute_next_process_rank(
+        rank, max_depth, next_depth, surplus_processes, n_processes);
     int right_branch_size = size - split_point_idx - 1;
 
 #ifdef DEBUG
