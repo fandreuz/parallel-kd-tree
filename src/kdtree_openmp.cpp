@@ -57,15 +57,18 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
 
 #pragma omp parallel
   {
-    num_threads = omp_get_num_threads();
+#pragma omp single
+    {
+      num_threads = omp_get_num_threads();
 
-    max_depth = compute_max_depth(num_threads);
-    surplus_processes = compute_n_surplus_processes(num_threads, max_depth);
+      max_depth = compute_max_depth(num_threads);
+      surplus_processes = compute_n_surplus_processes(num_threads, max_depth);
 #ifdef DEBUG
-    std::cout << "Starting " << num_threads << " with max_depth = " << max_depth
-              << std::endl;
+      std::cout << "Starting " << num_threads
+                << " with max_depth = " << max_depth << std::endl;
 #endif
-    build_tree(array, size, 0, 1, 0, 0);
+      build_tree(array, size, 0, 1, 0, 0);
+    }
   }
 
   // when we reach this point, all the children threads have done their work
@@ -134,7 +137,7 @@ void build_tree(DataPoint *array, int size, int depth, int region_width,
 
     // right
 #pragma omp task shared(splits_tree) final(no_more_new_threads)
-    build_tree(array + split_point_idx + 1, depth, size - split_point_idx - 1,
+    build_tree(array + split_point_idx + 1, size - split_point_idx - 1, depth,
                region_width, region_start_index, branch_starting_index + 1);
     // left
     if (split_point_idx > 0)
