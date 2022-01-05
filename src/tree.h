@@ -19,11 +19,14 @@
  * @brief A function used to convert from string to `data_type`.
  */
 #define string_converter std::stof
+
+#ifdef MPI_VERSION
 /**
  * @def
  * @brief MPI version of `data_type`.
  */
 #define mpi_data_type MPI_FLOAT
+#endif
 
 #else
 /**
@@ -36,11 +39,14 @@
  * @brief A function used to convert from string to `data_type`.
  */
 #define string_converter std::stod
+
+#ifdef MPI_VERSION
 /**
  * @def
  * @brief MPI version of `data_type`.
  */
 #define mpi_data_type MPI_DOUBLE
+#endif
 
 #endif
 
