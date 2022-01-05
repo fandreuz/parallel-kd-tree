@@ -285,16 +285,21 @@ void build_tree(DataPoint *array, int size, int depth) {
 }
 
 /*
-   Construct a tree in a serial way. The current process takes care of both
-   the left and right branch.
+   Construct a tree serially. The current process takes care of both the left
+   and right branch.
+
+   A region (i.e. k contiguous elements) of serial_splits holds an entire level
+   of the k-d tree (i.e. elements whose distance from the root is the same).
 
    - array is the set of values to be inserted into the tree.
-   - size is the size of array
-   - depth is the depth of the tree after the addition of this new level
+   - size is the size of array.
+   - depth is the depth of the tree after the addition of this new level.
    - region_width is the width of the current region of serial_splits which
-      holds the current level of the serial tree
-   - region_start_index is the index in of serial_splits in which the region
-      corresponding to the current level starts;
+      holds the current level of the serial tree. this increases (multiplied
+      by 2) at each recursive call.
+   - region_start_index is the index of serial_splits in which the region
+      corresponding to the current level starts (i.e. the index after the end
+      of the region corresponding to the level before).
    - branch_starting_index is the index of serial_splits (starting from
       region_width) in which the item used to split this branch is stored.
 */
@@ -325,14 +330,15 @@ void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
     region_start_index += region_width;
     region_width *= 2;
     branch_starting_index *= 2;
+    depth += 1;
 
     // right
-    build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
-                      depth + 1, region_width, region_start_index,
-                      branch_starting_index + 1);
+    build_tree_serial(array + split_point_idx + 1, depth,
+                      size - split_point_idx - 1, region_width,
+                      region_start_index, branch_starting_index + 1);
     // left
     if (split_point_idx > 0)
-      build_tree_serial(array, split_point_idx, depth + 1, region_width,
+      build_tree_serial(array, split_point_idx, depth, region_width,
                         region_start_index, branch_starting_index);
   }
 }
