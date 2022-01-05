@@ -39,7 +39,7 @@ data_type *read_file(std::string filename, int *size, int *dims) {
       if (temp_dims != -1 && temp_dims != row_buffer.size())
         throw std::invalid_argument(
             "Invalid number of dimensions for data point number " +
-            lines_buffer.size());
+            std::to_string(lines_buffer.size()));
       temp_dims = row_buffer.size();
 
       // we put evertthing into line_buffer

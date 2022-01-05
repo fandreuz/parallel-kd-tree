@@ -111,11 +111,11 @@ public:
   /**
    * @brief Get the value of the data point on the i-th axis.
    */
-  const T get_data(int i) const { return data[i]; }
+  T get_data(int i) const { return data[i]; }
   /**
    * @brief Get the number of axes in the dataset.
    */
-  const int get_dims() const { return dims; }
+  int get_dims() const { return dims; }
 
   /**
    * @brief Get a pointer to the root of the left branch originating from this

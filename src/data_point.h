@@ -35,7 +35,7 @@ public:
   /**
    * @brief Get the value of the data point on the i-th axis.
    */
-  const data_type get(int index) const { return values[index]; }
+  data_type get(int index) const { return values[index]; }
   /**
    * @brief Get a pointer to the first element of this data point.
    */

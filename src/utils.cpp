@@ -118,11 +118,7 @@ KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
                                 dims, nullptr, nullptr, false);
 }
 
-inline int select_splitting_dimension(int depth, int dims) {
-  return depth % dims;
-}
-
-inline int sort_and_split(DataPoint *array, int size, int axis) {
+int sort_and_split(DataPoint *array, int size, int axis) {
   // the second part of median_idx is needed to unbalance the split towards the
   // left region (which is the one which may parallelize with the highest
   // probability).
