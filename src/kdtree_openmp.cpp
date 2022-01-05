@@ -152,25 +152,5 @@ data_type *finalize() {
   std::cout << "[rank" << omp_get_thread_num() << "]: finalize called"
             << std::endl;
 #endif
-
-  // we unpack here the
-  data_type *temp_buffer =
-      unpack_risky_array(splits_tree, splits_tree_size, dims, initialized);
-
-  // here we store the rearranged tree
-  data_type *buffer = new data_type[splits_tree_size];
-
-  // the root of this tree is the first element in temp_buffer
-  std::memcpy(buffer, temp_buffer, dims * sizeof(data_type));
-
-  int branch_size = (splits_tree_size - 1) / 2;
-
-  data_type *left_branch = temp_buffer + dims;
-  data_type *right_branch = temp_buffer + (1 + branch_size) * dims;
-
-  rearrange_branches(buffer + dims, left_branch, right_branch, branch_size,
-                     dims);
-  delete[] temp_buffer;
-
-  return buffer;
+  return unpack_risky_array(splits_tree, splits_tree_size, dims, initialized);
 }
