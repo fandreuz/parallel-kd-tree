@@ -6,6 +6,7 @@
 
 #include <cstring>
 #include <limits>
+#include <algorithm>
 
 /**
  * @def
@@ -122,6 +123,17 @@ KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
  * @param depth The depth of the tree at this point, might be used in order
  *                to balance the choice of the axes.
  */
-inline int select_splitting_dimension(int depth);
+inline int select_splitting_dimension(int depth, int dims);
+
+/**
+   Sort the given array such that the element in the middle is exactly the
+   median with respect to the given axis, and all the items before and
+   after are respectively lower/greater than that item.
+
+   @param array Array to be sorted.
+   @param size Number of items in array.
+   @param axis Axis along which the sorting must be done.
+*/
+inline int sort_and_split(DataPoint *array, int size, int axis);
 
 #endif // UTILS_H

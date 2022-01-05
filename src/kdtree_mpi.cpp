@@ -166,23 +166,6 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
 }
 
 /*
-   Sort the given array such that the element in the middle is exactly the
-   median with respect to the given axis, and all the items before and
-   after are respectively lower/greater than that item.
-*/
-inline int sort_and_split(DataPoint *array, int size, int axis) {
-  // the second part of median_idx is needed to unbalance the split towards the
-  // left region (which is the one which may parallelize with the highest
-  // probability).
-  int median_idx = size / 2 - 1 * ((size + 1) % 2);
-  std::nth_element(array, array + median_idx, array + size,
-                   DataPointCompare(axis));
-  // if size is 2 we want to return the first element (the smallest one), since
-  // it will be placed into the first empty spot in serial_split
-  return median_idx;
-}
-
-/*
    Construct a tree in a parallel way. The current process takes care of the
    left branch, and delegates the right branch to the process
    rank+2^(D - depth), where D = log2(n_processes).
@@ -236,7 +219,7 @@ void build_tree(DataPoint *array, int size, int depth) {
                TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD);
     }
   } else {
-    int dimension = select_splitting_dimension(depth);
+    int dimension = select_splitting_dimension(depth, dims);
     int split_point_idx = sort_and_split(array, size, dimension);
 
 #ifdef DEBUG
@@ -328,7 +311,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
     new (serial_splits + region_start_index + branch_starting_index)
         DataPoint(std::move(array[0]));
   } else {
-    int dimension = select_splitting_dimension(depth);
+    int dimension = select_splitting_dimension(depth, dims);
     int split_point_idx = sort_and_split(array, size, dimension);
 
 #ifdef DEBUG

@@ -118,4 +118,18 @@ KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
                                 dims, nullptr, nullptr, false);
 }
 
-inline int select_splitting_dimension(int depth) { return depth % dims; }
+inline int select_splitting_dimension(int depth, int dims) {
+  return depth % dims;
+}
+
+inline int sort_and_split(DataPoint *array, int size, int axis) {
+  // the second part of median_idx is needed to unbalance the split towards the
+  // left region (which is the one which may parallelize with the highest
+  // probability).
+  int median_idx = size / 2 - 1 * ((size + 1) % 2);
+  std::nth_element(array, array + median_idx, array + size,
+                   DataPointCompare(axis));
+  // if size is 2 we want to return the first element (the smallest one), since
+  // it will be placed into the first empty spot in serial_split
+  return median_idx;
+}
