@@ -42,6 +42,11 @@ independently. The left branch is kept by `rank0`.
 This same strategy is then employed recursively by `rank0` and `rank1`, until
 the tree is completed.
 
+### OpenMP
+The strategy is very similar to the one presented in [MPI](#mpi), we use
+[task](https://www.openmp.org/wp-content/uploads/sc15-openmp-CT-MK-tasking.pdf)s
+to distribute the work easily.
+
 ## Example
 Given the following input:
 ```
@@ -61,7 +66,7 @@ The k-d tree produced is:
 
 ## Compile
 Download the source code with `git clone https://github.com/fAndreuzzi/kd-tree.git`,
-then navigate to the `src` folder and compile the source using the makefile.
+then navigate to the folder `src`  and compile the source using the makefile.
 The following recipes are available:
 - `make compile`: Compile the source code, the binary produced won't produce any
   kind of output;
@@ -74,24 +79,37 @@ The following recipes are available:
   of the process to be controlled via gdb must be set via the environment
   variable `MPI_DEBUG_RANK`).
 
+Moreover, in order to choose between MPI and OpenMP, you should append the
+command-line parameter `src=openmp` (or `src=mpi`). By default we use OpenMP.
+The result of the compilation is the file `tree_openmp.x` (or `tree_mpi.x`).
+
+For instance, the following produces the executable `tree_mpi.x` which prints
+only the time needed to build the tree using MPI:
+```
+make time src=mpi
+```
+
 ## Usage
-You can run the executable `tree_mpi.x` generated in the step
-[Compile](#compile) using the usual command `mpirun`:
-
-### Serial
-`mpirun -np 1 tree_mpi.x`
-
-### 10 processors
-`mpirun -np 10 tree_mpi.x`
+Run the executable `tree_openmp.x` (or `tree_mpi.x`) generated in
+[Compile](#compile) with:
+```bash
+# OpenMP
+./tree_openmp.x
+```
+or
+```bash
+# MPI
+mpirun -np ... tree_mpi.x
+```
 
 ### Specify a dataset
-By default the dataset used is the file `benchmark/benchmar1.csv`. You can
+By default the dataset used is the file `benchmark/benchmar1.csv`, but you can
 specify your own dataset via a command line argument. Valid datasets are CSV
 files where each data point has the same number of components (one data point
 per row).
 
-For example, the following command runs the k-d tree algorithm on the dataset
-inside the file `foo.csv` in the current directory:
+For example, the following command builds a k-d tree on the dataset inside the
+file `foo.csv` in the current directory:
 
 `mpirun -np 10 tree_mpi.x foo.csv`
 
