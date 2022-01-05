@@ -4,7 +4,7 @@
 #include <iostream>
 #include <limits>
 
-#ifdef MPI_VERSION
+#ifdef USE_MPI
 #include <mpi.h>
 #endif
 
@@ -20,7 +20,7 @@
  */
 #define string_converter std::stof
 
-#ifdef MPI_VERSION
+#ifdef USE_MPI
 /**
  * @def
  * @brief MPI version of `data_type`.
@@ -40,7 +40,7 @@
  */
 #define string_converter std::stod
 
-#ifdef MPI_VERSION
+#ifdef USE_MPI
 /**
  * @def
  * @brief MPI version of `data_type`.

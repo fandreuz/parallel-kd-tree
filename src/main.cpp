@@ -1,7 +1,7 @@
 #include "file_reader.h"
 #include "tree_printer.h"
 
-#ifdef MPI_VERSION
+#ifdef USE_MPI
 #include "kdtree_mpi.h"
 #include <mpi.h>
 #else
@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   // the dataset as a 1D array, DIMS consecutive items of dt are a data point
   data_type *dt = nullptr;
 
-#ifdef MPI_VERSION
+#ifdef USE_MPI
   MPI_Init(&argc, &argv);
 
   int rank;
@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef TIME
-#ifdef MPI_VERSION
+#ifdef USE_MPI
   double start_time = MPI_Wtime();
 #else
   double start_time = omp_get_wtime();
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
   KNode<data_type> *tree = generate_kd_tree(dt, SIZE, DIMS);
 
 #ifdef TIME
-#ifdef MPI_VERSION
+#ifdef USE_MPI
   if (rank == 0) {
     double end_time = MPI_Wtime();
     std::cout << "# " << end_time - start_time << std::endl;
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
   delete[] dt;
 
 #ifdef OUTPUT
-#ifdef MPI_VERSION
+#ifdef USE_MPI
   if (rank == 0) {
     std::cout << *tree;
   }
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 
   delete tree;
 
-#ifdef MPI_VERSION
+#ifdef USE_MPI
   MPI_Finalize();
 #endif
 }
