@@ -1,4 +1,4 @@
-#include "tree_mpi.h"
+#include "kdtree_mpi.h"
 
 /**
  * @def
