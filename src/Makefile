@@ -18,7 +18,7 @@
 
 .DEFAULT_GOAL := output
 FLAGS = -std=c++14 -Wall -Wextra
-UTILITIES = data_point.cpp main.cpp file_reader.cpp tree_printer.cpp utils.cpp
+UTILITIES = data_point.cpp main.cpp file_utils.cpp tree_printer.cpp utils.cpp
 
 # OpenMP or MPI?
 ifeq ($(src), mpi)
