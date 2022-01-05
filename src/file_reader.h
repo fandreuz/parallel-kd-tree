@@ -3,6 +3,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <queue>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -29,4 +30,47 @@
  * @return data_type* A 1D array whose size is `size*dims`, where `dims`
  *                      consecutive items represent a data point.
  */
-data_type *read_file(std::string filename, int *size, int *dims);
+data_type *read_file(const std::string &filename, int *size, int *dims);
+
+/**
+ * @brief Write a k-d tree to a CSV file.
+ *
+ * The k-d tree will be stored as a CSV file where each row represents a data
+ * point. The k-d tree is stored in order of increasing leve, left to right.
+ *
+ * It is recommended that this library and the user which is going to use the
+ * file agree on the splitting axes used to construct the k-d tree.
+ *
+ * @param filename Path (relative or absolute) to the CSV file.
+ * @param KNode*   Root of the tree to be stored.
+ * @param dims     Number of components per each data point.
+ */
+template <typename T>
+void write_file(const std::string &filename, KNode<T> *root, int dims) {
+  std::ofstream outdata;
+  outdata.open(filename, std::fstream::out);
+  if (!outdata) {
+    throw std::invalid_argument("File not found.");
+  }
+
+  std::queue<KNode<T> *> to_visit;
+  to_visit.push(root);
+
+  while (to_visit.size() > 0) {
+    KNode<T> *node = to_visit.front();
+    to_visit.pop();
+
+    for (int i = 0; i < dims; ++i) {
+      outdata << node->get_data(i);
+      if (i < dims - 1)
+        outdata << ",";
+    }
+
+    if (node->get_left() != nullptr)
+      to_visit.push(node->get_left());
+    if (node->get_right() != nullptr)
+      to_visit.push(node->get_right());
+
+    outdata << std::endl;
+  }
+}

@@ -9,7 +9,7 @@
     When there are no more rows, we copy the content of the vector on a 1D
     array (via std::memcpy) and return that 1D array to the user.
  */
-data_type *read_file(std::string filename, int *size, int *dims) {
+data_type *read_file(const std::string &filename, int *size, int *dims) {
   std::ifstream file(filename);
 
   // local variable which holds the last known number of dimensions per data

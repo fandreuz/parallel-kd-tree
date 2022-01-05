@@ -127,12 +127,12 @@ public:
    * @brief Get a pointer to the root of the left branch originating from this
    *         node.
    */
-  const KNode<T> *get_left() const { return left; }
+  KNode<T> *get_left() const { return left; }
   /**
    * @brief Get a pointer to the root of the right branch originating from this
    *         node.
    */
-  const KNode<T> *get_right() const { return right; }
+  KNode<T> *get_right() const { return right; }
 };
 
 #endif // TREE_H
