@@ -135,8 +135,8 @@ void build_tree(DataPoint *array, int size, int depth, int region_width,
         depth > max_depth + 1 ||
         (depth == max_depth + 1 && thread_num >= surplus_processes);
 
+#pragma omp task default(shared) final(no_more_new_threads)
     // right
-#pragma omp task shared(splits_tree) final(no_more_new_threads)
     build_tree(array + split_point_idx + 1, size - split_point_idx - 1, depth,
                region_width, region_start_index, branch_starting_index + 1);
     // left
