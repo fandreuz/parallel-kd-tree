@@ -3,12 +3,54 @@
 
 #include <math.h>
 
+/**
+ * @brief Compute the maximum parallel depth reachable with the given set of
+ *          processes/threads.
+ *
+ * Due to the approach used to parallelize the construction of the k-d tree,
+ * there is a maximum depth in which every split is guaranteed to have at least
+ * one process ready to take on the right branch. This function computes this
+ * depth.
+ *
+ * This function determines indirectly also the number of "surplus" processes.
+ *
+ * @param n_processes Number of processes/threads available.
+ * @return int
+ */
 inline int compute_max_depth(int n_processes) {
   return log2((double)n_processes);
 }
+
+/**
+ * @brief Compute the number of surplus processes.
+ *
+ * A surplus process is a process assigned to a level of the tree which does
+ * not guarantee that every splits has a process ready to take on the right
+ * branch. Only some splits have a surplus process, starting from the leftmost
+ * split in the tree.
+ *
+ * @param n_processes Number of processes/threads available.
+ * @param max_depth Maximum depth which guarantees that there is at least one
+ *                    idle process.
+ * @return int
+ */
 inline int compute_n_surplus_processes(int n_processes, int max_depth) {
   return n_processes - (int)pow(2.0, (double)max_depth);
 }
+
+/**
+ * @brief Compute the rank of the process which is going to take on the right
+ *          branch after a split occurred.
+ *
+ * @param rank Rank of the process which operated the split.
+ * @param max_depth Maximum depth which guarantees that there is at least one
+ *                    idle process.
+ * @param next_depth Depth of the next level of the tree (the one after the
+ *                    split).
+ * @param surplus_processes Number of surplus processes.
+ * @param n_processes Number of processes/threads available.
+ * @return int
+ */
 inline int compute_next_process_rank(int rank, int max_depth, int next_depth,
                                      int surplus_processes, int n_processes) {
   // this has two components: one for non-surplus processes, and one for surplus
