@@ -23,29 +23,31 @@ ifeq ($(src), mpi)
 	SRC = kdtree_mpi.cpp
 	OPENMP_FLAGS =
 	COMPILER = mpic++
+	OUT = tree_mpi.x
 else
 	SRC = kdtree_openmp.cpp
 	OPENMP_FLAGS = -fopenmp
 	COMPILER = g++
+	OUT = tree_openmp.x
 endif
 
 compile:
-	mpic++ $(FLAGS) $(OPENMP_FLAGS) -O3 $(UTILITIES) $(SRC) -o tree_mpi.x
+	mpic++ $(FLAGS) $(OPENMP_FLAGS) -O3 $(UTILITIES) $(SRC) -o $(OUT)
 
 debug:
-	mpic++ $(FLAGS) $(OPENMP_FLAGS) -D DEBUG -D OUTPUT $(UTILITIES) $(SRC) -o tree_mpi.x
+	mpic++ $(FLAGS) $(OPENMP_FLAGS) -D DEBUG -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
 
 output:
-	mpic++ $(FLAGS) $(OPENMP_FLAGS) -D OUTPUT $(UTILITIES) $(SRC) -o tree_mpi.x
+	mpic++ $(FLAGS) $(OPENMP_FLAGS) -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
 
 time:
-	mpic++ $(FLAGS) $(OPENMP_FLAGS) -D TIME -O3 $(UTILITIES) $(SRC) -o tree_mpi.x
+	mpic++ $(FLAGS) $(OPENMP_FLAGS) -D TIME -O3 $(UTILITIES) $(SRC) -o $(OUT)
 
 leaks:
-	mpic++ $(FLAGS) $(OPENMP_FLAGS) -static-libasan -fsanitize=address -g -D DEBUG $(UTILITIES) $(SRC) -o tree_mpi.x
+	mpic++ $(FLAGS) $(OPENMP_FLAGS) -static-libasan -fsanitize=address -g -D DEBUG $(UTILITIES) $(SRC) -o $(OUT)
 
 mpidebug:
-	mpic++ $(FLAGS) $(OPENMP_FLAGS) -g -D DEBUG -D MPI_DEBUG $(UTILITIES) $(SRC) -o tree_mpi.x
+	mpic++ $(FLAGS) $(OPENMP_FLAGS) -g -D DEBUG -D MPI_DEBUG $(UTILITIES) $(SRC) -o $(OUT)
 
 clean:
 	rm *.x
