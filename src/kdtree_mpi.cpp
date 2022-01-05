@@ -333,9 +333,9 @@ void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
     depth += 1;
 
     // right
-    build_tree_serial(array + split_point_idx + 1, depth,
-                      size - split_point_idx - 1, region_width,
-                      region_start_index, branch_starting_index + 1);
+    build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
+                      depth, region_width, region_start_index,
+                      branch_starting_index + 1);
     // left
     if (split_point_idx > 0)
       build_tree_serial(array, split_point_idx, depth, region_width,
