@@ -68,6 +68,17 @@ int main(int argc, char **argv) {
 #endif
 #endif
 
+#ifdef STORE_TO_FILE
+  std::string out_filename = "output.csv";
+#ifdef USE_MPI
+  if (rank == 0) {
+    write_file(out_filename, tree, DIMS);
+  }
+#else
+  write_file(out_filename, tree, DIMS);
+#endif
+#endif
+
   delete tree;
 
 #ifdef USE_MPI

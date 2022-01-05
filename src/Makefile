@@ -11,6 +11,8 @@
 # make mpidebug  ----> Enables debugging via gdb (the rank of the debugged
 #					   process must be set via the environment variable
 #					   MPI_DEBUG_RANK).
+# make file      ----> Save the k-d tree as a CSV file in the current directory,
+#					   in order of increasing level (left to right).
 # make clean	 ----> Clean the folder (removes executable/precompiled headers
 #		   	           files)
 
@@ -48,6 +50,9 @@ leaks:
 
 mpidebug:
 	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -g -D DEBUG -D MPI_DEBUG $(UTILITIES) $(SRC) -o $(OUT)
+
+file:
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -D STORE_TO_FILE $(UTILITIES) $(SRC) -o $(OUT)
 
 clean:
 	rm *.x
