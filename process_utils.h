@@ -1,3 +1,6 @@
+#ifndef PUTILS_H
+#define PUTILS_H
+
 #include <math.h>
 
 inline int compute_max_depth(int n_processes) {
@@ -9,3 +12,5 @@ inline int compute_n_surplus_processes(int n_processes, int max_depth) {
 inline int next_process_rank(int rank, int max_depth, int next_depth) {
   return rank + pow(2.0, max_depth - next_depth);
 }
+
+#endif // PUTILS_H
