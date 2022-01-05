@@ -32,22 +32,22 @@ else
 endif
 
 compile:
-	mpic++ $(FLAGS) $(ADDITIONAL_FLAGS) -O3 $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -O3 $(UTILITIES) $(SRC) -o $(OUT)
 
 debug:
-	mpic++ $(FLAGS) $(ADDITIONAL_FLAGS) -D DEBUG -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -D DEBUG -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
 
 output:
-	mpic++ $(FLAGS) $(ADDITIONAL_FLAGS) -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
 
 time:
-	mpic++ $(FLAGS) $(ADDITIONAL_FLAGS) -D TIME -O3 $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -D TIME -O3 $(UTILITIES) $(SRC) -o $(OUT)
 
 leaks:
-	mpic++ $(FLAGS) $(ADDITIONAL_FLAGS) -static-libasan -fsanitize=address -g -D DEBUG $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -static-libasan -fsanitize=address -g -D DEBUG $(UTILITIES) $(SRC) -o $(OUT)
 
 mpidebug:
-	mpic++ $(FLAGS) $(ADDITIONAL_FLAGS) -g -D DEBUG -D MPI_DEBUG $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -g -D DEBUG -D MPI_DEBUG $(UTILITIES) $(SRC) -o $(OUT)
 
 clean:
 	rm *.x
