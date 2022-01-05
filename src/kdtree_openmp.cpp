@@ -36,15 +36,6 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
   // is also constant for all the processes.
   dims = dms;
 
-  num_threads = omp_get_num_threads();
-
-  max_depth = compute_max_depth(num_threads);
-  surplus_processes = compute_n_surplus_processes(num_threads, max_depth);
-#ifdef DEBUG
-  std::cout << "Starting " << num_threads << " with max_depth = " << max_depth
-            << std::endl;
-#endif
-
   // we create an array which packs all the data in a convenient way.
   // this weird mechanic is needed because we do not want to call the default
   // constructor (which the plain 'new' does)
@@ -65,7 +56,17 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
   }
 
 #pragma omp parallel
-  build_tree(array, size, 0, splits_tree_size, 0, );
+  {
+    num_threads = omp_get_num_threads();
+
+    max_depth = compute_max_depth(num_threads);
+    surplus_processes = compute_n_surplus_processes(num_threads, max_depth);
+#ifdef DEBUG
+    std::cout << "Starting " << num_threads << " with max_depth = " << max_depth
+              << std::endl;
+#endif
+    build_tree(array, size, 0, 1, 0, 0);
+  }
 
   // when we reach this point, all the children threads have done their work
   // due to taskwait.
@@ -128,8 +129,8 @@ void build_tree(DataPoint *array, int size, int depth, int region_width,
 
     int thread_num = omp_get_thread_num();
     bool no_more_new_threads =
-        next_depth > max_depth + 1 ||
-        (next_depth == max_depth + 1 && thread_num >= surplus_processes);
+        depth > max_depth + 1 ||
+        (depth == max_depth + 1 && thread_num >= surplus_processes);
 
     // right
 #pragma omp task shared(splits_tree) final(no_more_new_threads)
