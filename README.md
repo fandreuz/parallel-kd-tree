@@ -100,10 +100,13 @@ inside the file `foo.csv` in the current directory:
 - [x] Working MPI implementation;
   - [ ] Optimize the last call to `finalize()`: maybe it's not needed (since we traverse the tree in `utils.convert_to_knodes()`);
   - [ ] Fix some memory leaks.
-- [ ] Working OpenMP implementation;
+- [x] Working OpenMP implementation;
+  - [ ] Fix *false sharing*. A possible way is to write things in a "bisectional" way, and then use `rearrange_branches`;
 - [ ] Visual representation of the tree;
-- [ ] Performance evaluation.
-- [ ] Comparison against some serial implementation(?)
+- [ ] Catchy images in README;
+- [ ] Use template instead of `dims` instance variable in `DataPoint`;
+- [ ] Performance evaluation;
+- [ ] Comparison against other implementations(?)
 
 ## References
 1. Friedman, Jerome H., Jon Louis Bentley, and Raphael Ari Finkel. ["An algorithm for finding best matches in logarithmic expected time."](https://homes.di.unimi.it/righini/Didattica/AlgoritmiEuristici/MaterialeAE/Friedman%20k-d%20trees.pdf) ACM Transactions on Mathematical Software (TOMS) 3.3 (1977): 209-226.
