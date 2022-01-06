@@ -77,7 +77,10 @@ The following recipes are available:
 - `make compile`: Compile the source code, the binary produced won't produce any
   kind of output;
 - `make debug`: The binary produced will show debug messages and the output;
-- `make output`: Show only the output;
+- `make output`: Show only the output (i.e. the textual representation of the
+  tree);
+- `make file`: Save the k-d tree as a CSV file, each node is saved in order of
+  increasing level starting from the root (left to right).
 - `make time`: Show only the time taken to build the k-d tree;
 - `make leaks`: Find memory leaks in the source code, does not produce any other
   output;
@@ -121,6 +124,19 @@ file `foo.csv` in the current directory:
 # here we use MPI and 10 processors
 # foo.csv must exist and be well-formatted
 mpirun -np 10 tree_mpi.x foo.csv
+```
+
+### Save results
+If you compiled with the recipe `make file` (see [Compile](#compile)) you can
+save the result to a CSV file, which allows you to do some more things on your
+k-d tree (see [Visualization](#visualization)). You need to provide a path
+where the result can be saved (filename, not directory).
+
+For example, this saves the tree constructed on the dataset in `data.csv` and
+saves it in `output_tree.csv` in another directory:
+```bash
+# the folder ../results should exist
+./tree_openmp.x data.csv ../results/output_tree.csv
 ```
 
 ## Visualization

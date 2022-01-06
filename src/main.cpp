@@ -68,16 +68,30 @@ int main(int argc, char **argv) {
 #endif
 #endif
 
+  std::string out_filename;
+  if (argc > 2) {
+    const std::string out_filename = argv[2];
 #ifdef STORE_TO_FILE
-  std::string out_filename = "output.csv";
 #ifdef USE_MPI
-  if (rank == 0) {
-    write_file(out_filename, tree, DIMS);
-  }
+    if (rank == 0) {
+      write_file(out_filename, tree, DIMS);
+    }
 #else
-  write_file(out_filename, tree, DIMS);
+    write_file(out_filename, tree, DIMS);
+#endif
+
+#else
+#ifdef USE_MPI
+    if (rank == 0) {
+      std::cerr << "You supplied an output file name, but you did not compile "
+                   "with `make file`.";
+    }
+#else
+    std::cerr << "You supplied an output file name, but you did not compile "
+                 "with `make file`.";
 #endif
 #endif
+  }
 
   delete tree;
 
