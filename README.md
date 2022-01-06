@@ -63,14 +63,14 @@ to distribute the work easily.
 Download the source code with `git clone https://github.com/fAndreuzzi/kd-tree.git`,
 then navigate to the folder `src`  and compile the source using the makefile.
 The following recipes are available:
-- `make compile`: Compile the source code, the binary produced won't produce any
-  kind of output;
-- `make debug`: The binary produced will show debug messages and the output;
 - `make output`: Show only the output (i.e. the textual representation of the
   tree);
 - `make file`: Save the k-d tree as a CSV file, each node is saved in order of
-  increasing level starting from the root (left to right).
+  increasing level starting from the root (left to right);
 - `make time`: Show only the time taken to build the k-d tree;
+- `make debug`: The binary produced will show both debug messages and output;
+- `make compile`: Compile the source code, the binary produced won't produce any
+  kind of output;
 - `make leaks`: Find memory leaks in the source code, does not produce any other
   output;
 - `make mpidebug`: Prepare a binary that can be debugged using gdb (the rank
@@ -195,7 +195,7 @@ There are some configurations available:
 - [ ] Testing;
 - [x] Visual representation of the tree;
 - [x] Catchy images in README;
-- [ ] Use template instead of `dims` instance variable in `DataPoint`;
+- [ ] Allow setting number of components per data point in compilation to improve performance;
 - [ ] Performance evaluation;
 - [ ] Comparison against other implementations(?)
 
