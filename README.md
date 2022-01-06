@@ -196,6 +196,7 @@ There are some configurations available:
 - [x] Visual representation of the tree;
 - [x] Catchy images in README;
 - [ ] Allow setting number of components per data point in compilation to improve performance;
+- [ ] Put OpenMP and MPI implementations in the same file;
 - [ ] Performance evaluation;
 - [ ] Comparison against other implementations(?)
 
