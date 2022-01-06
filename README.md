@@ -53,23 +53,6 @@ The strategy is very similar to the one presented in [MPI](#mpi), we use
 [task](https://www.openmp.org/wp-content/uploads/sc15-openmp-CT-MK-tasking.pdf)s
 to distribute the work easily.
 
-## Example
-Given the following input:
-```
-(0,-2,-4) / (1,-1,-3) / (2,0,-2) / (3,1,-1) / (4,2,0)
-```
-
-The k-d tree produced is:
-```
-└──(2,0,-2)
-    ├──(0,-2,-4)
-    │   ├──(n/a)
-    │   └──(1,-1,-3)
-    └──(3,1,-1)
-        ├──(n/a)
-        └──(4,2,0)
-```
-
 ## Compile
 Download the source code with `git clone https://github.com/fAndreuzzi/kd-tree.git`,
 then navigate to the folder `src`  and compile the source using the makefile.
