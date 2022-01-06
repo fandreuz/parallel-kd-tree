@@ -111,8 +111,65 @@ per row).
 For example, the following command builds a k-d tree on the dataset inside the
 file `foo.csv` in the current directory:
 
-`mpirun -np 10 tree_mpi.x foo.csv`
+```bash
+# here we use MPI and 10 processors
+# foo.csv must exist and be well-formatted
+mpirun -np 10 tree_mpi.x foo.csv
+```
 
+## Visualization
+After constructing a k-d tree you may want to visualize it in some graphical
+way. In the folder `visualization` we provide an experimental tool to do just
+that.
+
+Suppose there is a k-d tree stored in a CSV file called `output.csv` in the
+folder `results`, which has been generated using this library. This is very
+important, since using a CSV file which does not represent a k-d tree results
+in very bad-looking results.
+
+Navigate to the folder `visualization`, we visualize the tree for clarity:
+
+```
+└──kd-tree
+    ├──benchmark
+    ├──src
+    ├──results
+    │   └──output.csv            # <- k-d tree to be visualized
+    └──visualization             # (*)
+        ├──converter.py
+        └──visualize_kd_tree.py
+```
+
+Open an interactive Python interpreter and write the following commands:
+```python
+>>> from visualize_kd_tree import KDTreeVisualization
+>>> from converter import csv_to_tree
+
+# we obtain a Python representation of the root of the k-d tree
+>>> root = csv_to_tree('../results/output.csv')
+
+# show the tree in an interactive Matplotlib window
+>>> KDTreeVisualization().visualize(root)
+```
+
+There are some configurations available:
+```python
+# save the image in 'output_figure.png'
+# the figure is 30x30 (default is 20x20) and 300 dpi (default is 200)
+>>> KDTreeVisualization().visualize(
+...     root, figsize=(30, 30), dpi=300, filename="output_figure.png"
+... )
+
+# - decrease the opacity of the surface drawn to represent a split (default is
+#   plane_alpha=0.4);
+# - decrease the width of lines parallel to a split surface
+#   (default is intersection_lines_width=3);
+# - increase the size of split points in the 3D volume (default is
+#   point_size=75)
+>>> v = KDTreeVisualization(
+...     plane_alpha=0.2, intersection_lines_width=1, point_size=100
+>>> v.visualize(root)
+```
 
 ## Roadmap
 - [x] Working MPI implementation;
