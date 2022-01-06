@@ -38,11 +38,16 @@ def find_min_max(root):
 #   the volume.
 class KDTreeVisualization:
     def __init__(
-        self, plane_alpha=0.4, intersection_lines_width=3, point_size=75
+        self,
+        plane_alpha=0.4,
+        intersection_lines_width=3,
+        point_size=75,
+        max_depth=-1,
     ):
         self.plane_alpha = plane_alpha
         self.intersection_lines_width = intersection_lines_width
         self.point_size = point_size
+        self.max_depth = max_depth
 
         self.min_value = 0
         self.max_value = 0
@@ -115,12 +120,14 @@ class KDTreeVisualization:
         for i in range(len(tp)):
             cut_matrix(tp[i], lower_limits[i], upper_limits[i])
 
-        ax.plot_surface(*tp, alpha=self.plane_alpha)
+        # we plot surface and line only if max_depth is not exceeded. otherwise
+        # we plot only the point
+        if not (self.max_depth > -1 and depth > self.max_depth):
+            ax.plot_surface(*tp, alpha=self.plane_alpha)
+            lines = self.strong_lines(tp, node.value, split_axis)
+            for l in lines:
+                ax.plot(*l, color="k", linewidth=self.intersection_lines_width)
         ax.scatter(*node.value, marker="o", s=self.point_size)
-
-        lines = self.strong_lines(tp, node.value, split_axis)
-        for l in lines:
-            ax.plot(*l, color="k", linewidth=self.intersection_lines_width)
 
         left_lower_limits = list(lower_limits)
         left_upper_limits = list(upper_limits)

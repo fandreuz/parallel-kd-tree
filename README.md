@@ -11,18 +11,24 @@ Visual | Textual
 --- | ---
 ![k-d tree 0](res/kd_tree_img0.png) | ![k-d tree 0](res/kd_tree_img0_textual.png)
 
-
 The procedure employed to build such a structure is the following:
 
 1. Choose one axis;
-2. Determine the median point for the dataset with respect to that axis
-   (i.e. the one which splits the dataset in two halves along the chosen axis);
+2. Determine the median point of the dataset with respect to the axis;
 3. For each one of the two halves, go back to `1`.
 
-The algorithms stops when the dataset contains one point.
+**Note**: The median point is the data point which splits the dataset in two
+halves along the chosen axis.
+
+The algorithms stops when the dataset contains only one point. Below you find
+the progression of the algorithm at increasing depths of the tree:
+
+Depth 0 | Depth 1 | Depth 2
+--- | --- | ---
+![k-d tree progress 0](res/kd_tree_progress_img0.png) | ![k-d tree progress 1](res/kd_tree_progress_img1.png) | ![k-d tree progress 2](res/kd_tree_progress_img2.png)
 
 A k-d tree may be represented with a binary tree, whose nodes
-should be defined approximately in the following way:
+are defined approximately in the following way:
 
 ```cpp
 struct Node {
