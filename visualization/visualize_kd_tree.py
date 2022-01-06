@@ -139,7 +139,15 @@ class KDTreeVisualization:
     # visualize the KDTree rooted in `root`. this method also computes some
     # instance variables (min_value, max_value, n_axes) used by other methods
     # of this class.
-    def visualize(self, root, figsize=(20, 20), dpi=200, filename=None):
+    def visualize(
+        self,
+        root,
+        figsize=(20, 20),
+        dpi=100,
+        filename=None,
+        camera_elevation=15,
+        camera_rotation=30,
+    ):
         fig = plt.figure(figsize=figsize, dpi=dpi)
         n_axes = len(root.value)
 
@@ -150,6 +158,9 @@ class KDTreeVisualization:
         self.draw_node(ax, root, [-np.infty] * n_axes, [np.infty] * n_axes, 0)
 
         if filename:
-            plt.savefig(filename)
+            ax.view_init(elev=camera_elevation, azim=camera_rotation)
+            fig.savefig(
+                filename, dpi=fig.dpi, bbox_inches="tight", transparent=True
+            )
         else:
             plt.show()

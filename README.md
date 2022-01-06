@@ -6,6 +6,12 @@ A *k-d tree* is a data structure which can be used to represent k-dimensional
 points in a convenient way. This kind of representation can be used to implement
 algorithms like K-Nearest Neighbors (KNN) very efficiently [2].
 
+Below you find two possible representations for a k-d tree (k=3):
+Visual | Textual
+--- | ---
+![k-d tree 0](res/kd_tree_img0.png) | ![k-d tree 0](res/kd_tree_img0_textual.png)
+
+
 The procedure employed to build such a structure is the following:
 
 1. Choose one axis;
@@ -152,12 +158,16 @@ Open an interactive Python interpreter and write the following commands:
 >>> KDTreeVisualization().visualize(root)
 ```
 
+6 Data Points | 10 Data Points
+--- | ---
+![k-d tree 1](res/kd_tree_img1.png) | ![k-d tree 2](res/kd_tree_img2.png)
+
 There are some configurations available:
 ```python
 # save the image in 'output_figure.png'
-# the figure is 30x30 (default is 20x20) and 300 dpi (default is 200)
+# the figure is 30x30 (default is 20x20) and 200 dpi (default is 100)
 >>> KDTreeVisualization().visualize(
-...     root, figsize=(30, 30), dpi=300, filename="output_figure.png"
+...     root, figsize=(30, 30), dpi=200, filename="output_figure.png"
 ... )
 
 # - decrease the opacity of the surface drawn to represent a split (default is
@@ -177,8 +187,9 @@ There are some configurations available:
   - [ ] Fix some memory leaks.
 - [x] Working OpenMP implementation;
   - [ ] Fix *false sharing*. A possible way is to write things in a "bisectional" way, and then use `rearrange_branches`;
-- [ ] Visual representation of the tree;
-- [ ] Catchy images in README;
+- [ ] Testing;
+- [x] Visual representation of the tree;
+- [x] Catchy images in README;
 - [ ] Use template instead of `dims` instance variable in `DataPoint`;
 - [ ] Performance evaluation;
 - [ ] Comparison against other implementations(?)
