@@ -91,6 +91,14 @@ int main(int argc, char **argv) {
                  "with `make file`.";
 #endif
 #endif
+  } else {
+#ifdef USE_MPI
+    if (rank == 0) {
+      std::cerr << "Path to output file not found.";
+    }
+#else
+    std::cerr << "Path to output file not found.";
+#endif
   }
 
   delete tree;
