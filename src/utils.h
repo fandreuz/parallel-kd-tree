@@ -7,6 +7,7 @@
 #include <cstring>
 #include <limits>
 #include <optional>
+#include <vector>
 
 /**
  * @def
@@ -51,6 +52,18 @@ int smaller_powersum_of_two(int n);
  * @return data_type* A 1D array of size `size*dims`.
  */
 data_type *unpack_array(DataPoint *array, int size, int dims);
+
+/**
+ * @brief Transform the given sequence of data points in a 1D array such that
+ *          `dims` contiguous items constitute a data point.
+ *
+ * @param first_point Iterator pointing to the first item of the sequence.
+ * @param last_point Iterator pointing to the last item of the sequence.
+ * @param dims  Number of components for each data point.
+ * @return data_type* A 1D array of size `size*dims`.
+ */
+data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
+                        std::vector<DataPoint>::iterator last_point, int dims);
 
 /**
  * @brief Transform the given array (which may contain uninitialized values)
@@ -140,3 +153,14 @@ inline int select_splitting_dimension(int depth, int dims) {
    @param axis Axis along which the sorting must be done.
 */
 int sort_and_split(DataPoint *array, int size, int axis);
+
+/**
+   Sort the given vector such that the element in the middle is exactly the
+   median with respect to the given axis, and all the items before and
+   after are respectively lower/greater than that item.
+
+   @param array Vector to be sorted.
+   @param axis Axis along which the sorting must be done.
+*/
+int sort_and_split(std::vector<DataPoint>::iterator first_data_point,
+                   std::vector<DataPoint>::iterator last_data_point, int axis);
