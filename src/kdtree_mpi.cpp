@@ -59,7 +59,8 @@ std::optional<DataPoint> *serial_splits = nullptr;
 std::vector<int> children;
 
 void build_tree(std::vector<DataPoint>::iterator first_data_point,
-                std::vector<DataPoint>::iterator end_data_point, int depth);
+                std::vector<DataPoint>::iterator end_data_point, int size,
+                int depth);
 void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
                        std::vector<DataPoint>::iterator end_data_point,
                        int depth, int region_width, int region_start_index,
@@ -156,7 +157,7 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
             << std::endl;
 #endif
 
-  build_tree(data_points.begin(), data_points.end(), depth);
+  build_tree(data_points.begin(), data_points.end(), size, depth);
 
   // size might be changed by finalize (the actual size of the tree may not
   // be equal to the original size of the dataset)
@@ -182,9 +183,9 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
     from 0
 */
 void build_tree(std::vector<DataPoint>::iterator first_data_point,
-                std::vector<DataPoint>::iterator end_data_point, int depth) {
+                std::vector<DataPoint>::iterator end_data_point, int size,
+                int depth) {
   int next_depth = depth + 1;
-  int size = std::distance(first_data_point, end_data_point);
 
   if (size <= 1 || next_depth > max_depth + 1 ||
       (next_depth == max_depth + 1 && rank >= surplus_processes)) {
@@ -266,7 +267,8 @@ void build_tree(std::vector<DataPoint>::iterator first_data_point,
 
     if (split_point_idx != 0) {
       // this process takes care of the left part
-      build_tree(first_data_point, right_branch_first_point - 1, next_depth);
+      build_tree(first_data_point, right_branch_first_point - 1,
+                 split_point_idx, next_depth);
     }
   }
 }
@@ -295,9 +297,10 @@ void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
                        std::vector<DataPoint>::iterator end_data_point,
                        int depth, int region_width, int region_start_index,
                        int branch_starting_index) {
-  int size = std::distance(first_data_point, end_data_point);
-
-  if (size <= 1) {
+  // this is equivalent to say that there is at most one data point in the
+  // sequence
+  if (first_data_point == end_data_point ||
+      first_data_point + 1 == end_data_point) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
@@ -310,8 +313,9 @@ void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
 
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: serial split against axis " << dimension
-              << ", split_idx = " << split_point_idx << ", size = " << size
-              << std::endl;
+              << ", split_idx = " << split_point_idx
+              << ", size = " << std::distance(first_data_point, end_data_point);
+    << std::endl;
 #endif
 
     serial_splits[region_start_index + branch_starting_index].emplace(
