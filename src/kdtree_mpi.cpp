@@ -156,6 +156,8 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
 #endif
 
   build_tree(array, size, depth);
+  // this should now contain only moved objects
+  delete[] array;
 
   // size might be changed by finalize (the actual size of the tree may not
   // be equal to the original size of the dataset)
