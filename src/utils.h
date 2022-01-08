@@ -58,7 +58,7 @@ data_type *unpack_array(DataPoint *array, int size, int dims);
  *          `dims` contiguous items constitute a data point.
  *
  * @param first_point Iterator pointing to the first item of the sequence.
- * @param last_point Iterator pointing to the last item of the sequence.
+ * @param last_point Iterator pointing past the last item of the sequence.
  * @param dims  Number of components for each data point.
  * @return data_type* A 1D array of size `size*dims`.
  */
@@ -159,8 +159,11 @@ int sort_and_split(DataPoint *array, int size, int axis);
    median with respect to the given axis, and all the items before and
    after are respectively lower/greater than that item.
 
-   @param array Vector to be sorted.
+   @param first_data_point An iterator pointing to the first data point in the
+                           sequence to be sorted.
+   @param end_data_point An iterator pointing past the last data point in the
+                           sequence to be sorted.
    @param axis Axis along which the sorting must be done.
 */
 int sort_and_split(std::vector<DataPoint>::iterator first_data_point,
-                   std::vector<DataPoint>::iterator last_data_point, int axis);
+                   std::vector<DataPoint>::iterator end_data_point, int axis);

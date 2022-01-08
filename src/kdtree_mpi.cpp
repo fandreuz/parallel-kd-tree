@@ -58,9 +58,12 @@ std::optional<DataPoint> *serial_splits = nullptr;
 // this process
 std::vector<int> children;
 
-void build_tree(DataPoint *array, int size, int depth);
-void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
-                       int region_start_index, int branch_starting_index);
+void build_tree(std::vector<DataPoint>::iterator first_data_point,
+                std::vector<DataPoint>::iterator end_data_point, int depth);
+void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
+                       std::vector<DataPoint>::iterator end_data_point,
+                       int depth, int region_width, int region_start_index,
+                       int branch_starting_index);
 data_type *finalize(int &new_size);
 
 KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
@@ -135,12 +138,10 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
 #endif
   }
 
-  // we create an array which packs all the data in a convenient way.
-  // this weird mechanic is needed because we do not want to call the default
-  // constructor (which the plain 'new' does)
-  DataPoint *array = (DataPoint *)::operator new(size * sizeof(DataPoint));
+  std::vector<DataPoint> data_points;
+  data_points.reserve(size);
   for (int i = 0; i < size; i++) {
-    new (array + i) DataPoint(data + i * dims, dims);
+    data_points.push_back(DataPoint(data + i * dims, dims));
   }
 
   // we can delete data if and only if we're the owner, i.e. we created the
@@ -155,9 +156,7 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
             << std::endl;
 #endif
 
-  build_tree(array, size, depth);
-  // this should now contain only moved objects
-  delete[] array;
+  build_tree(data_points.begin(), data_points.end(), depth);
 
   // size might be changed by finalize (the actual size of the tree may not
   // be equal to the original size of the dataset)
@@ -176,13 +175,16 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
    This function uses the assumption that we always have 2^k processes, where
    k is a natural number.
 
-   - array is the set of values to be inserted into the tree.
-   - size is the size of array
+   - first_data_point is an iterator pointing to the first data point in the
+      set;
+   - end_data_point is an iterator pointing to past-the-last data point;
    - depth is the depth of a node created by a call to build_tree. depth starts
     from 0
 */
-void build_tree(DataPoint *array, int size, int depth) {
+void build_tree(std::vector<DataPoint>::iterator first_data_point,
+                std::vector<DataPoint>::iterator end_data_point, int depth) {
   int next_depth = depth + 1;
+  int size = std::distance(first_data_point, end_data_point);
 
   if (size <= 1 || next_depth > max_depth + 1 ||
       (next_depth == max_depth + 1 && rank >= surplus_processes)) {
@@ -204,7 +206,7 @@ void build_tree(DataPoint *array, int size, int depth) {
       // size < bigger_powersum_of_two
       serial_splits = new std::optional<DataPoint>[serial_branch_size];
 
-      build_tree_serial(array, size, depth, 1, 0, 0);
+      build_tree_serial(first_data_point, end_data_point, depth, 1, 0, 0);
     }
 
     // this process should have called a surplus process to do some stuff, but
@@ -220,14 +222,15 @@ void build_tree(DataPoint *array, int size, int depth) {
     }
   } else {
     int dimension = select_splitting_dimension(depth, dims);
-    int split_point_idx = sort_and_split(array, size, dimension);
+    int split_point_idx =
+        sort_and_split(first_data_point, end_data_point, dimension);
 
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: parallel split against axis "
               << dimension << ", split_idx = " << split_point_idx << std::endl;
 #endif
 
-    parallel_splits.push_back(std::move(array[split_point_idx]));
+    parallel_splits.push_back(std::move(*(first_data_point + split_point_idx)));
 
     int right_process_rank = compute_next_process_rank(
         rank, max_depth, next_depth, surplus_processes, n_processes);
@@ -248,8 +251,10 @@ void build_tree(DataPoint *array, int size, int depth) {
     MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank,
              TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD);
 
+    std::vector<DataPoint>::iterator right_branch_first_point =
+        first_data_point + split_point_idx + 1;
     data_type *right_branch =
-        unpack_array(array + split_point_idx + 1, right_branch_size, dims);
+        unpack_array(right_branch_first_point, end_data_point, dims);
 
     // we delegate the right part to another process
     // this is synchronous since we also want to delete the buffer ASAP
@@ -259,28 +264,10 @@ void build_tree(DataPoint *array, int size, int depth) {
 
     children.push_back(right_process_rank);
 
-    // if there is nothing left in this branch we need to artificially augument
-    // it with a fictious node
-    data_type *fake_data;
-    if (split_point_idx == 0) {
-      fake_data = new data_type[dims];
-      for (int i = 0; i < dims; ++i)
-        fake_data[i] = EMPTY_PLACEHOLDER;
-      array = new DataPoint(fake_data, dims);
-      delete[] fake_data;
-      // since this (local) variale is used as the size in the next call to
-      // build_tree we increase it by one (since we generated fake data).
-      split_point_idx = 1;
+    if (split_point_idx != 0) {
+      // this process takes care of the left part
+      build_tree(first_data_point, right_branch_first_point - 1, next_depth);
     }
-    // this process takes care of the left part
-    build_tree(array, split_point_idx, next_depth);
-
-    /*
-    if (split_point_idx == 0) {
-      delete[] fake_data;
-      delete array;
-    }
-    */
   }
 }
 
@@ -291,29 +278,35 @@ void build_tree(DataPoint *array, int size, int depth) {
    A region (i.e. k contiguous elements) of serial_splits holds an entire level
    of the k-d tree (i.e. elements whose distance from the root is the same).
 
-   - array is the set of values to be inserted into the tree.
-   - size is the size of array.
-   - depth is the depth of the tree after the addition of this new level.
+   - first_data_point is an iterator pointing to the first data point in the
+      set;
+   - end_data_point is an iterator pointing to past-the-last data point;
+   - depth is the depth of the tree after the addition of this new level;
    - region_width is the width of the current region of serial_splits which
       holds the current level of the serial tree. this increases (multiplied
-      by 2) at each recursive call.
+      by 2) at each recursive call;
    - region_start_index is the index of serial_splits in which the region
       corresponding to the current level starts (i.e. the index after the end
-      of the region corresponding to the level before).
+      of the region corresponding to the level before);
    - branch_starting_index is the index of serial_splits (starting from
       region_width) in which the item used to split this branch is stored.
 */
-void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
-                       int region_start_index, int branch_starting_index) {
+void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
+                       std::vector<DataPoint>::iterator end_data_point,
+                       int depth, int region_width, int region_start_index,
+                       int branch_starting_index) {
+  int size = std::distance(first_data_point, end_data_point);
+
   if (size <= 1) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
     serial_splits[region_start_index + branch_starting_index].emplace(
-        DataPoint(std::move(array[0])));
+        DataPoint(std::move(*first_data_point)));
   } else {
     int dimension = select_splitting_dimension(depth, dims);
-    int split_point_idx = sort_and_split(array, size, dimension);
+    int split_point_idx =
+        sort_and_split(first_data_point, end_data_point, dimension);
 
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: serial split against axis " << dimension
@@ -322,7 +315,7 @@ void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
 #endif
 
     serial_splits[region_start_index + branch_starting_index].emplace(
-        DataPoint(std::move(array[split_point_idx])));
+        DataPoint(std::move(*(first_data_point + split_point_idx))));
 
     // we update the values for the next iteration
     region_start_index += region_width;
@@ -330,14 +323,17 @@ void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
     branch_starting_index *= 2;
     depth += 1;
 
+    std::vector<DataPoint>::iterator right_branch_first_point =
+        first_data_point + split_point_idx + 1;
     // right
-    build_tree_serial(array + split_point_idx + 1, size - split_point_idx - 1,
-                      depth, region_width, region_start_index,
+    build_tree_serial(right_branch_first_point, end_data_point, depth,
+                      region_width, region_start_index,
                       branch_starting_index + 1);
     // left
     if (split_point_idx > 0)
-      build_tree_serial(array, split_point_idx, depth, region_width,
-                        region_start_index, branch_starting_index);
+      build_tree_serial(first_data_point, right_branch_first_point - 1, depth,
+                        region_width, region_start_index,
+                        branch_starting_index);
   }
 }
 
