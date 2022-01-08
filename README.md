@@ -1,5 +1,5 @@
 # Parallel k-d tree
-Parallel implementation of k-d tree using MPI, OpenMP and C++.
+Parallel implementation of k-d tree using MPI, OpenMP and C++17.
 
 ## Summary
 A *k-d tree* is a data structure which can be used to represent k-dimensional
