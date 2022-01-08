@@ -10,6 +10,7 @@
 #include <mpi.h>
 #include <unistd.h>
 #include <vector>
+#include <optional>
 
 /**
  * @brief Generate a k-d tree a set of k-dimensional data using MPI.

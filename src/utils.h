@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstring>
 #include <limits>
+#include <optional>
 
 /**
  * @def
@@ -74,6 +75,9 @@ data_type *unpack_array(DataPoint *array, int size, int dims);
  */
 data_type *unpack_risky_array(DataPoint *array, int size, int dims,
                               bool *initialized);
+
+data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
+                                 int dims, data_type fallback_value);
 
 /**
  * @brief Rearrange `branch1`, `branch2` into a single array.

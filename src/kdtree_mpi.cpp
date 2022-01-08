@@ -52,10 +52,7 @@ std::vector<DataPoint> parallel_splits;
 
 // DataPoints in the serial branch assigned to this process. see also
 // build_tree_serial
-DataPoint *serial_splits = nullptr;
-
-// if the i-th item is true, the i-th item in serial_splits is initialized
-bool *initialized;
+std::optional<DataPoint> *serial_splits = nullptr;
 
 // children of this process, i.e. processes that received a right branch from
 // this process
@@ -196,13 +193,10 @@ void build_tree(DataPoint *array, int size, int depth) {
       // we want that the serial branch is storable in an array whose size is
       // a powersum of two
       serial_branch_size = bigger_powersum_of_two(size);
-      serial_splits =
-          (DataPoint *)::operator new(serial_branch_size * sizeof(DataPoint));
-
-      initialized = new bool[serial_branch_size];
-      for (int i = 0; i < serial_branch_size; ++i) {
-        initialized[i] = false;
-      }
+      // sum of them are NOT going to be initialized since they are placeholders
+      // of leafs (last level of the tree) that are not present since
+      // size < bigger_powersum_of_two
+      serial_splits = new std::optional<DataPoint>[serial_branch_size];
 
       build_tree_serial(array, size, depth, 1, 0, 0);
     }
@@ -305,14 +299,12 @@ void build_tree(DataPoint *array, int size, int depth) {
 */
 void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
                        int region_start_index, int branch_starting_index) {
-  initialized[region_start_index + branch_starting_index] = true;
-
   if (size <= 1) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
-    new (serial_splits + region_start_index + branch_starting_index)
-        DataPoint(std::move(array[0]));
+    serial_splits[region_start_index + branch_starting_index].emplace(
+        DataPoint(std::move(array[0])));
   } else {
     int dimension = select_splitting_dimension(depth, dims);
     int split_point_idx = sort_and_split(array, size, dimension);
@@ -323,8 +315,8 @@ void build_tree_serial(DataPoint *array, int size, int depth, int region_width,
               << std::endl;
 #endif
 
-    new (serial_splits + region_start_index + branch_starting_index)
-        DataPoint(std::move(array[split_point_idx]));
+    serial_splits[region_start_index + branch_starting_index].emplace(
+        DataPoint(std::move(array[split_point_idx])));
 
     // we update the values for the next iteration
     region_start_index += region_width;
@@ -360,8 +352,8 @@ data_type *finalize(int &size) {
   int left_branch_size = serial_branch_size;
 
   if (serial_branch_size > 0) {
-    left_branch_buffer = unpack_risky_array(serial_splits, serial_branch_size,
-                                            dims, initialized);
+    left_branch_buffer = unpack_optional_array(
+        serial_splits, serial_branch_size, dims, EMPTY_PLACEHOLDER);
   }
 
   // merged_array contains the values which results from merging a right branch

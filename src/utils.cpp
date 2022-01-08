@@ -48,6 +48,20 @@ data_type *unpack_risky_array(DataPoint *array, int size, int dims,
   return unpacked;
 }
 
+data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
+                                 int dims, data_type fallback_value) {
+  data_type *unpacked = new data_type[size * dims];
+  for (int i = 0; i < size; ++i) {
+    if (array[i].has_value()) {
+      DataPoint dp = std::move(*array[i]);
+      std::memcpy(unpacked + i * dims, dp.data(), dims * sizeof(data_type));
+    } else {
+      std::fill_n(unpacked + i * dims, dims, fallback_value);
+    }
+  }
+  return unpacked;
+}
+
 /*
   This function rearranges branch1 and branch2 into dest such that we first
   take 1 node from branch1 and 1 node from branch2, then 2 nodes from branch1
