@@ -156,9 +156,13 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
 #endif
 
   build_tree(array, size, depth);
+
   // size might be changed by finalize (the actual size of the tree may not
   // be equal to the original size of the dataset)
   data_type *tree = finalize(size);
+  if (rank != 0)
+    return nullptr;
+
   return convert_to_knodes(tree, size, dims, 0, 1, 0);
 }
 
