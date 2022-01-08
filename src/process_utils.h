@@ -1,5 +1,4 @@
-#ifndef PUTILS_H
-#define PUTILS_H
+#pragma once
 
 #include <math.h>
 
@@ -61,5 +60,3 @@ inline int compute_next_process_rank(int rank, int max_depth, int next_depth,
   else
     return -1;
 }
-
-#endif // PUTILS_H

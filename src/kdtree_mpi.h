@@ -1,3 +1,5 @@
+#pragma once
+
 #include "data_point.h"
 #include "process_utils.h"
 #include "tree.h"

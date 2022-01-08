@@ -1,5 +1,4 @@
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include "data_point.h"
 #include "tree.h"
@@ -141,5 +140,3 @@ inline int select_splitting_dimension(int depth, int dims) {
    @param axis Axis along which the sorting must be done.
 */
 int sort_and_split(DataPoint *array, int size, int axis);
-
-#endif // UTILS_H

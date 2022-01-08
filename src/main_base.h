@@ -1,3 +1,5 @@
+#pragma once
+
 #include "file_utils.h"
 #include "tree_printer.h"
 

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "process_utils.h"
 #include "utils.h"
 
