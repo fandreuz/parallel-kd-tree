@@ -1,109 +1,50 @@
-#include "file_utils.h"
-#include "tree_printer.h"
+#include "main_base.h"
 
-#ifdef USE_MPI
-#include "kdtree_mpi.h"
-#include <mpi.h>
-#else
-#include "kdtree_openmp.h"
-#include <omp.h>
-#endif
+template void log_message(std::string);
+template void log_message(KNode<data_type> &);
 
 int main(int argc, char **argv) {
+  init_parallel_environment(&argc, &argv);
+
   const std::string filename =
       argc > 1 ? argv[1] : "../benchmark/benchmark1.csv";
-
-  // size and number of components per data point in the dataset
-  int SIZE = -1, DIMS = -1;
+  // number of data points and number of components per data point in the
+  // dataset
+  int n_data_points, n_dims;
   // the dataset as a 1D array, DIMS consecutive items of dt are a data point
-  data_type *dt = nullptr;
-
-#ifdef USE_MPI
-  MPI_Init(&argc, &argv);
-
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  // we want that only one process is loading the file
-  if (rank == 0)
-    dt = read_file(filename, &SIZE, &DIMS);
-#else
-  // if we're using OpenMP there's no need to check that this is the main
-  // process
-  dt = read_file(filename, &SIZE, &DIMS);
-#endif
+  data_type *dt = read_file_serial(filename, &n_data_points, &n_dims);
 
 #ifdef TIME
-#ifdef USE_MPI
-  double start_time = MPI_Wtime();
-#else
-  double start_time = omp_get_wtime();
-#endif
+  double start_time = get_time();
 #endif
 
-  KNode<data_type> *tree = generate_kd_tree(dt, SIZE, DIMS);
+  KNode<data_type> *tree = generate_kd_tree(dt, n_data_points, n_dims);
 
 #ifdef TIME
-#ifdef USE_MPI
-  if (rank == 0) {
-    double end_time = MPI_Wtime();
-    std::cout << "# " << end_time - start_time << std::endl;
-  }
-#else
-  double end_time = omp_get_wtime();
-  std::cout << "# " << end_time - start_time << std::endl;
-#endif
+  // output the time needed to build the k-d tree
+  log_message("# " + std::to_string(get_time() - start_time) + "\n");
 #endif
 
   // we can now delete the data safely
   delete[] dt;
 
 #ifdef OUTPUT
-#ifdef USE_MPI
-  if (rank == 0) {
-    std::cout << *tree;
-  }
-#else
-  std::cout << *tree;
-#endif
+  log_message<KNode<data_type> &>(*tree);
 #endif
 
-  std::string out_filename;
-  if (argc > 2) {
-    const std::string out_filename = argv[2];
 #ifdef STORE_TO_FILE
-#ifdef USE_MPI
-    if (rank == 0) {
-      write_file(out_filename, tree, DIMS);
-    }
+  std::string out_filename;
+  if (argc > 2)
+    write_file(argv[2], tree, n_dims);
+  else
+    log_message("Path to output file not found.");
 #else
-    write_file(out_filename, tree, DIMS);
+  if (argc > 2)
+    log_message("You supplied an output file name, but you did not compile "
+                "with `make file`.");
 #endif
-
-#else
-#ifdef USE_MPI
-    if (rank == 0) {
-      std::cerr << "You supplied an output file name, but you did not compile "
-                   "with `make file`.";
-    }
-#else
-    std::cerr << "You supplied an output file name, but you did not compile "
-                 "with `make file`.";
-#endif
-#endif
-  } else {
-#ifdef USE_MPI
-    if (rank == 0) {
-      std::cerr << "Path to output file not found.";
-    }
-#else
-    std::cerr << "Path to output file not found.";
-#endif
-  }
 
   delete tree;
 
-#ifdef USE_MPI
-  MPI_Finalize();
-#endif
+  finalize_parallel_environment();
 }
