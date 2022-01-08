@@ -15,7 +15,7 @@ data_type *read_file(const std::string &filename, int *size, int *dims) {
   // local variable which holds the last known number of dimensions per data
   // point. used to check that all data points have the same number of
   // components
-  int temp_dims = -1;
+  std::optional<std::size_t> last_known_dims = std::nullopt;
 
   constexpr char separator = ',';
 
@@ -26,7 +26,7 @@ data_type *read_file(const std::string &filename, int *size, int *dims) {
       std::vector<data_type> row_buffer;
 
       int start = 0;
-      for (int i = 1; i < line.length(); ++i) {
+      for (std::size_t i = 1; i < line.length(); ++i) {
         // we found a component
         if (line[i] == separator) {
           row_buffer.push_back(string_converter(line.substr(start, i)));
@@ -36,14 +36,14 @@ data_type *read_file(const std::string &filename, int *size, int *dims) {
       row_buffer.push_back(string_converter(line.substr(start, line.length())));
 
       // we check that all the components have the same number of dimensions
-      if (temp_dims != -1 && temp_dims != row_buffer.size())
+      if (last_known_dims.has_value() && *last_known_dims != row_buffer.size())
         throw std::invalid_argument(
             "Invalid number of dimensions for data point number " +
             std::to_string(lines_buffer.size()));
-      temp_dims = row_buffer.size();
+      last_known_dims.emplace(row_buffer.size());
 
       // we put evertthing into line_buffer
-      for (int i = 0; i < temp_dims; ++i)
+      for (std::size_t i = 0; i < *last_known_dims; ++i)
         lines_buffer.push_back(row_buffer[i]);
     }
     file.close();
@@ -51,20 +51,20 @@ data_type *read_file(const std::string &filename, int *size, int *dims) {
     throw std::invalid_argument("File not found.");
   }
 
-  int temp_size = lines_buffer.size() / temp_dims;
-
   // we return the number of data points and their dimensionality
-  *dims = temp_dims;
-  *size = temp_size;
+  int loc_size = lines_buffer.size() / *last_known_dims;
+  *size = loc_size;
+  int loc_dims = (int)*last_known_dims;
+  *dims = loc_dims;
 
 #ifdef DEBUG
   std::cout << "Found " << *size << " data points with " << *dims
             << " dimensions" << std::endl;
 #endif
 
-  data_type *data_points = new data_type[temp_size * temp_dims];
+  data_type *data_points = new data_type[loc_size * loc_dims];
   std::memcpy(data_points, lines_buffer.data(),
-              temp_size * temp_dims * sizeof(data_type));
+              loc_size * loc_dims * sizeof(data_type));
 
   return data_points;
 }

@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <optional>
 
 /**
  * @brief Extract a dataset of k-dimensional data points from a CSV file.
