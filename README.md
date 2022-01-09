@@ -1,8 +1,10 @@
 # Parallel k-d tree
+
 Parallel implementation of k-d tree using MPI, OpenMP and C++17.
 
 ## Summary
-A *k-d tree* is a data structure which can be used to represent k-dimensional
+
+A _k-d tree_ is a data structure which can be used to represent k-dimensional
 points in a convenient way. This kind of representation can be used to implement
 algorithms like K-Nearest Neighbors (KNN) very efficiently [2].
 
@@ -23,9 +25,9 @@ halves along the chosen axis.
 The algorithms stops when the dataset contains only one point. Below you find
 the progression of the algorithm at increasing depths of the tree:
 
-Depth 0 | Depth 1 | Depth 2
---- | --- | ---
-![k-d tree progress 0](res/kd_tree_progress_img0.png) | ![k-d tree progress 1](res/kd_tree_progress_img1.png) | ![k-d tree progress 2](res/kd_tree_progress_img2.png)
+| Depth 0                                               | Depth 1                                               | Depth 2                                               |
+| ----------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
+| ![k-d tree progress 0](res/kd_tree_progress_img0.png) | ![k-d tree progress 1](res/kd_tree_progress_img1.png) | ![k-d tree progress 2](res/kd_tree_progress_img2.png) |
 
 A k-d tree may be represented with a binary tree, whose nodes
 are defined approximately in the following way:
@@ -39,10 +41,13 @@ struct Node {
     Node *right;
 };
 ```
+
 We assume that our data can be represented using a `double` value.
 
 ## Parallelization
+
 ### MPI
+
 The strategy employed for the parallelization with MPI consists in delegating
 one of the two branches resulting from a split to one of the available processes
 waiting. At the beginning we start with only one process (which we refer to as
@@ -55,14 +60,17 @@ This same strategy is then employed recursively by `rank0` and `rank1`, until
 the tree is completed.
 
 ### OpenMP
+
 The strategy is very similar to the one presented in [MPI](#mpi), we use
 [task](https://www.openmp.org/wp-content/uploads/sc15-openmp-CT-MK-tasking.pdf)s
 to distribute the work easily.
 
 ## Compile
+
 Download the source code with `git clone https://github.com/fAndreuzzi/kd-tree.git`,
-then navigate to the folder `src`  and compile the source using the makefile.
+then navigate to the folder `src` and compile the source using the makefile.
 The following recipes are available:
+
 - `make output`: Show only the output (i.e. the textual representation of the
   tree);
 - `make file`: Save the k-d tree as a CSV file, each node is saved in order of
@@ -78,29 +86,36 @@ The following recipes are available:
   variable `MPI_DEBUG_RANK`).
 
 Moreover, in order to choose between MPI and OpenMP, you should append the
-command-line parameter `src=openmp` (or `src=mpi`). By default we use OpenMP.
-The result of the compilation is the file `tree_openmp.x` (or `tree_mpi.x`).
+command-line parameter (e.g. `src=mpi`). By default (i.e. if `src` is omitted)
+we use OpenMP. The result of the compilation is the file `tree_omp.x` (or
+`tree_mpi.x`).
 
 For instance, the following produces the executable `tree_mpi.x` which prints
 only the time needed to build the tree using MPI:
+
 ```
 make time src=mpi
 ```
 
 ## Usage
-Run the executable `tree_openmp.x` (or `tree_mpi.x`) generated in
+
+Run the executable `tree_omp.x` (or `tree_mpi.x`) generated in
 [Compile](#compile) with:
+
 ```bash
 # OpenMP
-./tree_openmp.x
+./tree_omp.x
 ```
+
 or
+
 ```bash
 # MPI
 mpirun -np ... tree_mpi.x
 ```
 
 ### Specify a dataset
+
 By default the dataset used is the file `benchmark/benchmar1.csv`, but you can
 specify your own dataset via a command line argument. Valid datasets are CSV
 files where each data point has the same number of components (one data point
@@ -116,6 +131,7 @@ mpirun -np 10 tree_mpi.x foo.csv
 ```
 
 ### Save results
+
 If you compiled with the recipe `make file` (see [Compile](#compile)) you can
 save the result to a CSV file, which allows you to do some more things on your
 k-d tree (see [Visualization](#visualization)). You need to provide a path
@@ -123,12 +139,14 @@ where the result can be saved (filename, not directory).
 
 For example, this saves the tree constructed on the dataset in `data.csv` and
 saves it in `output_tree.csv` in another directory:
+
 ```bash
 # the folder ../results should exist
-./tree_openmp.x data.csv ../results/output_tree.csv
+./tree_omp.x data.csv ../results/output_tree.csv
 ```
 
 ## Visualization
+
 After constructing a k-d tree you may want to visualize it in some graphical
 way. In the folder `visualization` we provide an experimental tool to do just
 that.
@@ -152,6 +170,7 @@ Navigate to the folder `visualization`, we visualize the tree for clarity:
 ```
 
 Open an interactive Python interpreter and write the following commands:
+
 ```python
 >>> from visualize_kd_tree import KDTreeVisualization
 >>> from converter import csv_to_tree
@@ -163,11 +182,12 @@ Open an interactive Python interpreter and write the following commands:
 >>> KDTreeVisualization().visualize(root)
 ```
 
-6 Data Points | 10 Data Points
---- | ---
-![k-d tree 1](res/kd_tree_img1.png) | ![k-d tree 2](res/kd_tree_img2.png)
+| 6 Data Points                       | 10 Data Points                      |
+| ----------------------------------- | ----------------------------------- |
+| ![k-d tree 1](res/kd_tree_img1.png) | ![k-d tree 2](res/kd_tree_img2.png) |
 
 There are some configurations available:
+
 ```python
 # save the image in 'output_figure.png'
 # the figure is 30x30 (default is 20x20) and 200 dpi (default is 100)
@@ -187,19 +207,21 @@ There are some configurations available:
 ```
 
 ## Roadmap
+
 - [x] Working MPI implementation;
   - [ ] Optimize the last call to `finalize()`: maybe it's not needed (since we traverse the tree in `utils.convert_to_knodes()`);
-  - [ ] Fix some memory leaks.
+  - [x] Fix some memory leaks.
 - [x] Working OpenMP implementation;
-  - [ ] Fix *false sharing*. A possible way is to write things in a "bisectional" way, and then use `rearrange_branches`;
+  - [ ] Fix _false sharing_. A possible way is to write things in a "bisectional" way, and then use `rearrange_branches`;
 - [ ] Testing;
 - [x] Visual representation of the tree;
 - [x] Catchy images in README;
 - [ ] Allow setting number of components per data point in compilation to improve performance;
-- [ ] Put OpenMP and MPI implementations in the same file;
+- [x] Put OpenMP and MPI implementations in the same file;
 - [ ] Performance evaluation;
 - [ ] Comparison against other implementations(?)
 
 ## References
+
 1. Friedman, Jerome H., Jon Louis Bentley, and Raphael Ari Finkel. ["An algorithm for finding best matches in logarithmic expected time."](https://homes.di.unimi.it/righini/Didattica/AlgoritmiEuristici/MaterialeAE/Friedman%20k-d%20trees.pdf) ACM Transactions on Mathematical Software (TOMS) 3.3 (1977): 209-226.
 2. [Wikipedia](https://en.wikipedia.org/wiki/K-d_tree)

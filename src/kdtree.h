@@ -9,10 +9,15 @@
 #include <cstring>
 #include <iostream>
 #include <math.h>
-#include <mpi.h>
 #include <optional>
 #include <unistd.h>
 #include <vector>
+
+#ifdef USE_MPI
+#include <mpi.h>
+#else
+#include <omp.h>
+#endif
 
 /**
  * @def
@@ -52,7 +57,7 @@ private:
   int rank = -1;
 
   // number of MPI processes available
-  int n_processes = -1;
+  int n_parallel_workers = -1;
 
   // maximum depth of the tree at which we can parallelize. after this depth no
   // more right-branches can be assigned to non-surplus processes
@@ -64,7 +69,7 @@ private:
   int surplus_processes = 0;
 
   // number of items assigned serially (i.e. non-parallelizable) to this process
-  int serial_branch_size = 0;
+  int serial_tree_size = 0;
 
   // DataPoint used to split a branch assigned to this process. this process
   // then received the left branch resulting from the split.
@@ -72,7 +77,7 @@ private:
 
   // DataPoints in the serial branch assigned to this process. see also
   // build_tree_serial
-  std::optional<DataPoint> *serial_splits = nullptr;
+  std::optional<DataPoint> *serial_tree = nullptr;
 
   // children of this process, i.e. processes that received a right branch from
   // this process
@@ -82,10 +87,9 @@ private:
 
 #ifdef USE_MPI
   data_type *retrieve_dataset_info();
-#endif
-
   void build_tree(std::vector<DataPoint>::iterator first_data_point,
                   std::vector<DataPoint>::iterator end_data_point, int depth);
+#endif
 
   void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
                          std::vector<DataPoint>::iterator end_data_point,
@@ -94,6 +98,7 @@ private:
   data_type *finalize(int *kdtree_size);
 
   void grow_kd_tree(data_type *data);
+  void growing_entry_point(std::vector<DataPoint> data_points);
 
   int grown_kdtree_size;
 

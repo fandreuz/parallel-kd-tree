@@ -3,11 +3,11 @@
 #include "file_utils.h"
 #include "tree_printer.h"
 
+#include "kdtree.h"
+
 #ifdef USE_MPI
-#include "kdtree_mpi.h"
 #include <mpi.h>
 #else
-#include "kdtree_openmp.h"
 #include <omp.h>
 #endif
 

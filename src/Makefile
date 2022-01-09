@@ -18,7 +18,7 @@
 
 .DEFAULT_GOAL := output
 FLAGS = -std=c++17 -Wall -Wextra
-UTILITIES = main.cpp file_utils.cpp tree_printer.cpp utils.cpp
+UTILITIES = main.cpp file_utils.cpp tree_printer.cpp utils.cpp kdtree.cpp
 
 # OpenMP or MPI?
 ifeq ($(src), mpi)
@@ -27,10 +27,10 @@ ifeq ($(src), mpi)
 	COMPILER = mpic++
 	OUT = tree_mpi.x
 else
-	SRC = kdtree_openmp.cpp
+	SRC = kdtree_omp.cpp
 	ADDITIONAL_FLAGS = -fopenmp
 	COMPILER = g++
-	OUT = tree_openmp.x
+	OUT = tree_omp.x
 endif
 
 compile:

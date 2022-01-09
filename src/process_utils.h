@@ -72,7 +72,7 @@ inline int compute_next_process_rank(int rank, int max_depth, int next_depth,
  *        OpenMP) that are currently available.
  * @return int
  */
-inline int n_parallel_workers() {
+inline int get_n_parallel_workers() {
 #ifdef USE_MPI
   int n_processes;
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
