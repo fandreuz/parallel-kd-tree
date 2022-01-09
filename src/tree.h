@@ -103,6 +103,15 @@ public:
   KNode(data_type *d, int dms, KNode<T> *l, KNode<T> *r, bool root)
       : data{d}, dims{dms}, left{l}, right{r}, is_root{root} {}
 
+  KNode(KNode<T> &&other)
+      : data{other.data}, dims{other.dims}, left{other.left},
+        right{other.right}, is_root{other.is_root} {
+    other.data = nullptr;
+    other.left = nullptr;
+    other.right = nullptr;
+    other.dims = -1;
+  }
+
   /**
    * @brief Destroy the KNode object, and also the dataset if `is_root` is
    *         `true`.

@@ -71,6 +71,8 @@ public:
   KDTreeGreenhouse(data_type *data, int n_datapoints, int n_components);
   ~KDTreeGreenhouse() { delete grown_kd_tree; }
 
-  KNode<data_type> *get_grown_kdtree() { return grown_kd_tree; }
+  KNode<data_type> &&extract_grown_kdtree() {
+    return std::move(*grown_kd_tree);
+  }
   int get_grown_kdtree_size() { return grown_kdtree_size; }
 };

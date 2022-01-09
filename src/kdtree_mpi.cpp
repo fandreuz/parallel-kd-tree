@@ -122,10 +122,8 @@ void KDTreeGreenhouse::grow_kd_tree(data_type *data, int starting_depth) {
   int kdtree_size;
   data_type *tree = finalize(&kdtree_size);
 
-  if (parent == -1) {
-    grown_kdtree_size = kdtree_size;
-    grown_kd_tree = convert_to_knodes(tree, kdtree_size, n_components, 0, 1, 0);
-  }
+  grown_kdtree_size = kdtree_size;
+  grown_kd_tree = convert_to_knodes(tree, kdtree_size, n_components, 0, 1, 0);
 }
 
 /*
@@ -398,11 +396,7 @@ data_type *KDTreeGreenhouse::finalize(int *kdtree_size) {
 
     MPI_Send(left_branch_buffer, left_branch_size * n_components, mpi_data_type,
              parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
-    delete[] left_branch_buffer;
-    return nullptr;
-  } else {
-    // this is the root process
-    *kdtree_size = left_branch_size;
-    return left_branch_buffer;
   }
+  *kdtree_size = left_branch_size;
+  return left_branch_buffer;
 }
