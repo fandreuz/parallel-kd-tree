@@ -14,10 +14,36 @@
 #include <unistd.h>
 #include <vector>
 
+/**
+ * @def
+ * @brief Communicate to the parent MPI process that we're over with the branch
+ *          assigned to this process, and that we are sending back the results.
+ */
+#define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
+/**
+ * @def
+ * @brief Communicate to the parent MPI process the number of data point we are
+ *          going to send.
+ */
+#define TAG_RIGHT_PROCESS_N_ITEMS 11
+/**
+ * @def
+ * @brief Communicate to a child process the data points in the branch it is
+ *          assigned to. Attached to this communication there should be some
+ *          info regarding the branch (number of data points, depth of the tree
+ *          at this point, rank of the parent, number of components in the
+ *          data points).
+ */
+#define TAG_RIGHT_PROCESS_START 12
+
 class KDTreeGreenhouse {
 private:
   int n_datapoints;
   int n_components;
+
+  // the depth which this k-d tree starts from, used to determine which
+  // child process are to be used in further parallel splittings
+  int starting_depth = 0;
 
   // rank of the parent process of this process
   int parent = -1;
@@ -54,6 +80,10 @@ private:
 
   KNode<data_type> *grown_kd_tree = nullptr;
 
+#ifdef USE_MPI
+  data_type *retrieve_dataset_info();
+#endif
+
   void build_tree(std::vector<DataPoint>::iterator first_data_point,
                   std::vector<DataPoint>::iterator end_data_point, int depth);
 
@@ -63,7 +93,7 @@ private:
                          int branch_starting_index);
   data_type *finalize(int *kdtree_size);
 
-  void grow_kd_tree(data_type *data, int starting_depth);
+  void grow_kd_tree(data_type *data);
 
   int grown_kdtree_size;
 

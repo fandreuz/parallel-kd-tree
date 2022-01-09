@@ -1,34 +1,8 @@
 #include "kdtree_mpi.h"
 
-/**
- * @def
- * @brief Communicate to the parent MPI process that we're over with the branch
- *          assigned to this process, and that we are sending back the results.
- */
-#define TAG_RIGHT_PROCESS_PROCESSING_OVER 10
-/**
- * @def
- * @brief Communicate to the parent MPI process the number of data point we are
- *          going to send.
- */
-#define TAG_RIGHT_PROCESS_N_ITEMS 11
-/**
- * @def
- * @brief Communicate to a child process the data points in the branch it is
- *          assigned to. Attached to this communication there should be some
- *          info regarding the branch (number of data points, depth of the tree
- *          at this point, rank of the parent, number of components in the
- *          data points).
- */
-#define TAG_RIGHT_PROCESS_START 12
-
 KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, int n_datapoints,
                                    int n_components)
     : n_datapoints{n_datapoints}, n_components{n_components} {
-  // the depth which this k-d tree starts from, used to determine which
-  // child process are to be used in further parallel splittings
-  int start_from_depth = 0;
-
   n_processes = n_parallel_workers();
   max_depth = compute_max_depth(n_processes);
   surplus_processes = compute_n_surplus_processes(n_processes, max_depth);
@@ -46,51 +20,57 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, int n_datapoints,
 
   bool should_delete_data = false;
   if (data == nullptr) {
+#ifdef USE_MPI
     should_delete_data = true;
-
-    MPI_Status status;
-
-    // receive the number of items in the branch assigned to this process, and
-    // the depth of the tree at this point
-    int br_size_depth_parent[4];
-    MPI_Recv(&br_size_depth_parent, 4, MPI_INT, MPI_ANY_SOURCE,
-             TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD, &status);
-
-    // number of data points in the branch
-    this->n_datapoints = br_size_depth_parent[0];
-    if (this->n_datapoints == 0) {
-      // a process warned this process that there is no work to perform
-      return;
-    }
-
-    // depth of the tree at this point
-    start_from_depth = br_size_depth_parent[1];
-    // rank of the parent which "started" (i.e. waked) this process
-    parent = br_size_depth_parent[2];
-    this->n_components = br_size_depth_parent[3];
-
-#ifdef DEBUG
-    std::cout << "[rank" << rank << "]: went to sleep" << std::endl;
-#endif
-
-    data = new data_type[this->n_datapoints * this->n_components];
-    // receive the data in the branch assigned to this process
-    MPI_Recv(data, this->n_datapoints * this->n_components, mpi_data_type,
-             MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-#ifdef DEBUG
-    std::cout << "[rank" << rank << "]: waked by rank" << parent << std::endl;
+    data = retrieve_dataset_info();
+#else
+    throw std::invalid_argument("Received a null dataset.");
 #endif
   }
 
   // 1D representation of our KDTree, or nullptr (if not main process)
-  grow_kd_tree(data, start_from_depth);
+  grow_kd_tree(data);
 
   if (should_delete_data)
     delete[] data;
 }
 
-void KDTreeGreenhouse::grow_kd_tree(data_type *data, int starting_depth) {
+#ifdef USE_MPI
+data_type *KDTreeGreenhouse::retrieve_dataset_info() {
+#ifdef DEBUG
+  std::cout << "[rank" << rank << "]: went to sleep" << std::endl;
+#endif
+
+  MPI_Status status;
+
+  // receive the number of items in the branch assigned to this process, and
+  // the depth of the tree at this point
+  int br_size_depth_parent[4];
+  MPI_Recv(&br_size_depth_parent, 4, MPI_INT, MPI_ANY_SOURCE,
+           TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD, &status);
+
+  // number of data points in the branch
+  n_datapoints = br_size_depth_parent[0];
+  // depth of the tree at this point
+  starting_depth = br_size_depth_parent[1];
+  // rank of the parent which "started" (i.e. waked) this process
+  parent = br_size_depth_parent[2];
+  n_components = br_size_depth_parent[3];
+
+  data_type *data = new data_type[n_datapoints * n_components];
+  // receive the data in the branch assigned to this process
+  MPI_Recv(data, n_datapoints * n_components, mpi_data_type, MPI_ANY_SOURCE,
+           MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+#ifdef DEBUG
+  std::cout << "[rank" << rank << "]: waked by rank" << parent << std::endl;
+#endif
+
+  return data;
+}
+#endif
+
+void KDTreeGreenhouse::grow_kd_tree(data_type *data) {
 #ifdef MPI_DEBUG
   int debug_rank = atoi(getenv("MPI_DEBUG_RANK"));
   std::cerr << "MPI_DEBUG_RANK=" << atoi(getenv("MPI_DEBUG_RANK")) << std::endl;
