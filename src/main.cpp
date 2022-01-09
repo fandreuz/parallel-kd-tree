@@ -19,8 +19,9 @@ int main(int argc, char **argv) {
   double start_time = get_time();
 #endif
 
-  KNode<data_type> *tree =
-      KDTreeGreenhouse(dt, n_data_points, n_dims).get_grown_kdtree();
+  // this reference must not be destroyed until we're done reading the tree
+  KDTreeGreenhouse greenhouse(dt, n_data_points, n_dims);
+  KNode<data_type> *tree = greenhouse.get_grown_kdtree();
 
 #ifdef TIME
   // output the time needed to build the k-d tree

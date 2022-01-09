@@ -122,8 +122,10 @@ void KDTreeGreenhouse::grow_kd_tree(data_type *data, int starting_depth) {
   int kdtree_size;
   data_type *tree = finalize(&kdtree_size);
 
-  grown_kdtree_size = kdtree_size;
-  grown_kd_tree = convert_to_knodes(tree, kdtree_size, n_components, 0, 1, 0);
+  if (parent == -1) {
+    grown_kdtree_size = kdtree_size;
+    grown_kd_tree = convert_to_knodes(tree, kdtree_size, n_components, 0, 1, 0);
+  }
 }
 
 /*

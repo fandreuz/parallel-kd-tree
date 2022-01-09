@@ -61,7 +61,7 @@ private:
                          std::vector<DataPoint>::iterator end_data_point,
                          int depth, int region_width, int region_start_index,
                          int branch_starting_index);
-  data_type * finalize(int *kdtree_size);
+  data_type *finalize(int *kdtree_size);
 
   void grow_kd_tree(data_type *data, int starting_depth);
 
@@ -69,6 +69,7 @@ private:
 
 public:
   KDTreeGreenhouse(data_type *data, int n_datapoints, int n_components);
+  ~KDTreeGreenhouse() { delete grown_kd_tree; }
 
   KNode<data_type> *get_grown_kdtree() { return grown_kd_tree; }
   int get_grown_kdtree_size() { return grown_kdtree_size; }
