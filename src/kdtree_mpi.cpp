@@ -409,7 +409,7 @@ data_type *finalize(int &size) {
     merging_array = new data_type[(branch_size * 2 + 1) * dims];
 
     // the root of this tree is the data point used to split left and right
-    std::memcpy(merging_array, split_item.data(), dims * sizeof(data_type));
+    split_item.copy_to_array(merging_array);
 
     rearrange_branches(merging_array + dims, left_branch_buffer,
                        right_branch_buffer, branch_size, dims);

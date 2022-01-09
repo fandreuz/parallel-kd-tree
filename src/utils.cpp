@@ -25,8 +25,7 @@ int smaller_powersum_of_two(int n) {
 data_type *unpack_array(DataPoint *array, int size, int dims) {
   data_type *unpacked = new data_type[size * dims];
   for (int i = 0; i < size; ++i) {
-    data_type *d = array[i].data();
-    std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
+    array[i].copy_to_array(unpacked + i * dims);
   }
   return unpacked;
 }
@@ -38,8 +37,7 @@ data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
 
   int offset = 0;
   for (auto i = first_point; i != last_point; ++i) {
-    data_type *d = (*i).data();
-    std::memcpy(unpacked + offset, d, dims * sizeof(data_type));
+    (*i).copy_to_array(unpacked + offset);
     offset += dims;
   }
   return unpacked;
@@ -51,8 +49,7 @@ data_type *unpack_risky_array(DataPoint *array, int size, int dims,
   data_type *unpacked = new data_type[size * dims];
   for (int i = 0; i < size; ++i) {
     if (initialized[i]) {
-      data_type *d = array[i].data();
-      std::memcpy(unpacked + i * dims, d, dims * sizeof(data_type));
+      array[i].copy_to_array(unpacked + i * dims);
     } else {
       for (int j = 0; j < dims; ++j) {
         unpacked[i * dims + j] = EMPTY_PLACEHOLDER;
@@ -68,7 +65,7 @@ data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
   for (int i = 0; i < size; ++i) {
     if (array[i].has_value()) {
       DataPoint dp = std::move(*array[i]);
-      std::memcpy(unpacked + i * dims, dp.data(), dims * sizeof(data_type));
+      dp.copy_to_array(unpacked + i * dims);
     } else {
       std::fill_n(unpacked + i * dims, dims, fallback_value);
     }
