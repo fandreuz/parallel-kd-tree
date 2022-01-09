@@ -22,58 +22,75 @@
  */
 #define TAG_RIGHT_PROCESS_START 12
 
-// rank of the parent process of this process
-int parent = -1;
+KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, int n_datapoints,
+                                   int n_components)
+    : n_datapoints{n_datapoints}, n_components{n_components} {
+  // the depth which this k-d tree starts from, used to determine which
+  // child process are to be used in further parallel splittings
+  int start_from_depth = 0;
 
-// number of components for each data point
-int dims = -1;
+  n_processes = n_parallel_workers();
+  max_depth = compute_max_depth(n_processes);
+  surplus_processes = compute_n_surplus_processes(n_processes, max_depth);
 
-// rank of this process
-int rank = -1;
+  rank = get_rank();
 
-// number of MPI processes available
-int n_processes = -1;
+#ifdef DEBUG
+  if (rank == 0) {
+    std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
+              << std::endl;
+  }
 
-// maximum depth of the tree at which we can parallelize. after this depth no
-// more right-branches can be assigned to non-surplus processes
-int max_depth = 0;
+  std::cout << "[rank" << rank << "]: started" << std::endl;
+#endif
 
-// number of additional processes that are not enough to parallelize an entire
-// level of the tree, they are assigned left-to-right until there are no more
-// surplus processes
-int surplus_processes = 0;
+  bool should_delete_data = false;
+  if (data == nullptr) {
+    should_delete_data = true;
 
-// number of items assigned serially (i.e. non-parallelizable) to this process
-int serial_branch_size = 0;
+    MPI_Status status;
 
-// DataPoint used to split a branch assigned to this process. this process then
-// received the left branch resulting from the split.
-std::vector<DataPoint> parallel_splits;
+    // receive the number of items in the branch assigned to this process, and
+    // the depth of the tree at this point
+    int br_size_depth_parent[4];
+    MPI_Recv(&br_size_depth_parent, 4, MPI_INT, MPI_ANY_SOURCE,
+             TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD, &status);
 
-// DataPoints in the serial branch assigned to this process. see also
-// build_tree_serial
-std::optional<DataPoint> *serial_splits = nullptr;
+    // number of data points in the branch
+    this->n_datapoints = br_size_depth_parent[0];
+    if (this->n_datapoints == 0) {
+      // a process warned this process that there is no work to perform
+      return;
+    }
 
-// children of this process, i.e. processes that received a right branch from
-// this process
-std::vector<int> children;
+    // depth of the tree at this point
+    start_from_depth = br_size_depth_parent[1];
+    // rank of the parent which "started" (i.e. waked) this process
+    parent = br_size_depth_parent[2];
+    this->n_components = br_size_depth_parent[3];
 
-void build_tree(std::vector<DataPoint>::iterator first_data_point,
-                std::vector<DataPoint>::iterator end_data_point, int size,
-                int depth);
-void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
-                       std::vector<DataPoint>::iterator end_data_point,
-                       int depth, int region_width, int region_start_index,
-                       int branch_starting_index);
-data_type *finalize(int &new_size);
+#ifdef DEBUG
+    std::cout << "[rank" << rank << "]: went to sleep" << std::endl;
+#endif
 
-KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
-  // we can save dims as a global variable since it is not going to change. it
-  // is also constant for all the processes.
-  dims = dms;
+    data = new data_type[this->n_datapoints * this->n_components];
+    // receive the data in the branch assigned to this process
+    MPI_Recv(data, this->n_datapoints * this->n_components, mpi_data_type,
+             MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#ifdef DEBUG
+    std::cout << "[rank" << rank << "]: waked by rank" << parent << std::endl;
+#endif
+  }
 
+  // 1D representation of our KDTree, or nullptr (if not main process)
+  grow_kd_tree(data, start_from_depth);
+
+  if (should_delete_data)
+    delete[] data;
+}
+
+void KDTreeGreenhouse::grow_kd_tree(data_type *data, int starting_depth) {
 #ifdef MPI_DEBUG
   int debug_rank = atoi(getenv("MPI_DEBUG_RANK"));
   std::cerr << "MPI_DEBUG_RANK=" << atoi(getenv("MPI_DEBUG_RANK")) << std::endl;
@@ -88,84 +105,25 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
   }
 #endif
 
-  MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
-
-  max_depth = compute_max_depth(n_processes);
-  surplus_processes = compute_n_surplus_processes(n_processes, max_depth);
-#ifdef DEBUG
-  if (rank == 0) {
-    std::cout << "Starting " << n_processes << " with max_depth = " << max_depth
-              << std::endl;
-  }
-
-  std::cout << "[rank" << rank << "]: started" << std::endl;
-#endif
-
-  int depth = 0;
-  if (rank != 0) {
-    MPI_Status status;
-
-    // receive the number of items in the branch assigned to this process, and
-    // the depth of the tree at this point
-    int br_size_depth_parent[4];
-    MPI_Recv(&br_size_depth_parent, 4, MPI_INT, MPI_ANY_SOURCE,
-             TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD, &status);
-
-    // number of data points in the branch
-    size = br_size_depth_parent[0];
-    if (size == 0) {
-      // a process warned this process that there is no work to perform
-      return nullptr;
-    }
-
-    // depth of the tree at this point
-    depth = br_size_depth_parent[1];
-    // rank of the parent which "started" (i.e. waked) this process
-    parent = br_size_depth_parent[2];
-    // dimensionality of the data points
-    dims = br_size_depth_parent[3];
-
-#ifdef DEBUG
-    std::cout << "[rank" << rank << "]: went to sleep" << std::endl;
-#endif
-
-    data = new data_type[size * dims];
-    // receive the data in the branch assigned to this process
-    MPI_Recv(data, size * dims, mpi_data_type, MPI_ANY_SOURCE, MPI_ANY_TAG,
-             MPI_COMM_WORLD, &status);
-
-#ifdef DEBUG
-    std::cout << "[rank" << rank << "]: waked by rank" << parent << std::endl;
-#endif
-  }
-
   std::vector<DataPoint> data_points;
-  data_points.reserve(size);
-  for (int i = 0; i < size; i++) {
-    data_points.push_back(DataPoint(data + i * dims, dims));
+  data_points.reserve(n_datapoints);
+  for (int i = 0; i < n_datapoints; i++) {
+    data_points.push_back(DataPoint(data + i * n_components, n_components));
   }
-
-  // we can delete data if and only if we're the owner, i.e. we created the
-  // data, but this is not true if the rank is 0 (in such case the data is
-  // owned by the user).
-  if (rank != 0)
-    delete[] data;
 
 #ifdef DEBUG
   std::cout << "[rank" << rank
-            << "]: starting parallel build_tree (branch size: " << size << ")"
-            << std::endl;
+            << "]: starting parallel build_tree (branch size: " << n_datapoints
+            << ")" << std::endl;
 #endif
 
-  build_tree(data_points.begin(), data_points.end(), size, depth);
+  build_tree(data_points.begin(), data_points.end(), starting_depth);
 
-  // size might be changed by finalize (the actual size of the tree may not
-  // be equal to the original size of the dataset)
-  data_type *tree = finalize(size);
-  if (rank != 0)
-    return nullptr;
+  int kdtree_size;
+  data_type *tree = finalize(&kdtree_size);
 
-  return convert_to_knodes(tree, size, dims, 0, 1, 0);
+  grown_kdtree_size = kdtree_size;
+  grown_kd_tree = convert_to_knodes(tree, kdtree_size, n_components, 0, 1, 0);
 }
 
 /*
@@ -182,15 +140,15 @@ KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms) {
    - depth is the depth of a node created by a call to build_tree. depth starts
     from 0
 */
-void build_tree(std::vector<DataPoint>::iterator first_data_point,
-                std::vector<DataPoint>::iterator end_data_point, int size,
-                int depth) {
+void KDTreeGreenhouse::build_tree(
+    std::vector<DataPoint>::iterator first_data_point,
+    std::vector<DataPoint>::iterator end_data_point, int depth) {
   int next_depth = depth + 1;
 
-  if (size <= 1 || next_depth > max_depth + 1 ||
+  if (n_datapoints <= 1 || next_depth > max_depth + 1 ||
       (next_depth == max_depth + 1 && rank >= surplus_processes)) {
 #ifdef DEBUG
-    if (size <= 1)
+    if (n_datapoints <= 1)
       std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
     else {
       std::cout << "[rank" << rank
@@ -198,13 +156,13 @@ void build_tree(std::vector<DataPoint>::iterator first_data_point,
                 << std::endl;
     }
 #endif
-    if (size > 0) {
+    if (n_datapoints > 0) {
       // we want that the serial branch is storable in an array whose size is
       // a powersum of two
-      serial_branch_size = bigger_powersum_of_two(size);
+      serial_branch_size = bigger_powersum_of_two(n_datapoints);
       // sum of them are NOT going to be initialized since they are placeholders
       // of leafs (last level of the tree) that are not present since
-      // size < bigger_powersum_of_two
+      // n_datapoints < bigger_powersum_of_two
       serial_splits = new std::optional<DataPoint>[serial_branch_size];
 
       build_tree_serial(first_data_point, end_data_point, depth, 1, 0, 0);
@@ -213,7 +171,8 @@ void build_tree(std::vector<DataPoint>::iterator first_data_point,
     // this process should have called a surplus process to do some stuff, but
     // since we have only one or less items in the buffer we could not call
     // anyone. however we need to wake that process to avoid deadlock
-    if (size <= 1 && next_depth == max_depth + 1 && rank < surplus_processes) {
+    if (n_datapoints <= 1 && next_depth == max_depth + 1 &&
+        rank < surplus_processes) {
       int right_process_rank = n_processes - surplus_processes + rank;
 
       int right_branch_data[4];
@@ -222,7 +181,7 @@ void build_tree(std::vector<DataPoint>::iterator first_data_point,
                TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD);
     }
   } else {
-    int dimension = select_splitting_dimension(depth, dims);
+    int dimension = select_splitting_dimension(depth, n_components);
     int split_point_idx =
         sort_and_split(first_data_point, end_data_point, dimension);
 
@@ -235,40 +194,41 @@ void build_tree(std::vector<DataPoint>::iterator first_data_point,
 
     int right_process_rank = compute_next_process_rank(
         rank, max_depth, next_depth, surplus_processes, n_processes);
-    int right_branch_size = size - split_point_idx - 1;
+    int right_branch_size = n_datapoints - split_point_idx - 1;
 
 #ifdef DEBUG
     std::cout << "[rank" << rank
               << "]: delegating right region (starting from) "
               << split_point_idx + 1 << " (size " << right_branch_size << " of "
-              << size << ") to rank" << right_process_rank << std::endl;
+              << n_datapoints << ") to rank" << right_process_rank << std::endl;
 #endif
 
     int right_branch_data[4];
     right_branch_data[0] = right_branch_size;
     right_branch_data[1] = next_depth;
     right_branch_data[2] = rank;
-    right_branch_data[3] = dims;
+    right_branch_data[3] = n_components;
     MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank,
              TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD);
 
     std::vector<DataPoint>::iterator right_branch_first_point =
         first_data_point + split_point_idx + 1;
     data_type *right_branch =
-        unpack_array(right_branch_first_point, end_data_point, dims);
+        unpack_array(right_branch_first_point, end_data_point, n_components);
 
     // we delegate the right part to another process
     // this is synchronous since we also want to delete the buffer ASAP
-    MPI_Send(right_branch, right_branch_size * dims, mpi_data_type,
+    MPI_Send(right_branch, right_branch_size * n_components, mpi_data_type,
              right_process_rank, 0, MPI_COMM_WORLD);
     delete[] right_branch;
+
+    n_datapoints = split_point_idx;
 
     children.push_back(right_process_rank);
 
     if (split_point_idx != 0) {
       // this process takes care of the left part
-      build_tree(first_data_point, right_branch_first_point - 1,
-                 split_point_idx, next_depth);
+      build_tree(first_data_point, right_branch_first_point - 1, next_depth);
     }
   }
 }
@@ -293,10 +253,10 @@ void build_tree(std::vector<DataPoint>::iterator first_data_point,
    - branch_starting_index is the index of serial_splits (starting from
       region_width) in which the item used to split this branch is stored.
 */
-void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
-                       std::vector<DataPoint>::iterator end_data_point,
-                       int depth, int region_width, int region_start_index,
-                       int branch_starting_index) {
+void KDTreeGreenhouse::build_tree_serial(
+    std::vector<DataPoint>::iterator first_data_point,
+    std::vector<DataPoint>::iterator end_data_point, int depth,
+    int region_width, int region_start_index, int branch_starting_index) {
   // this is equivalent to say that there is at most one data point in the
   // sequence
   if (first_data_point == end_data_point ||
@@ -307,15 +267,15 @@ void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
     serial_splits[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*first_data_point)));
   } else {
-    int dimension = select_splitting_dimension(depth, dims);
+    int dimension = select_splitting_dimension(depth, n_components);
     int split_point_idx =
         sort_and_split(first_data_point, end_data_point, dimension);
 
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: serial split against axis " << dimension
               << ", split_idx = " << split_point_idx
-              << ", size = " << std::distance(first_data_point, end_data_point);
-    << std::endl;
+              << ", size = " << std::distance(first_data_point, end_data_point)
+              << std::endl;
 #endif
 
     serial_splits[region_start_index + branch_starting_index].emplace(
@@ -341,7 +301,7 @@ void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
   }
 }
 
-data_type *finalize(int &size) {
+data_type *KDTreeGreenhouse::finalize(int *kdtree_size) {
   // we wait for all the child processes to complete their work
   int n_children = children.size();
 
@@ -359,7 +319,7 @@ data_type *finalize(int &size) {
 
   if (serial_branch_size > 0) {
     left_branch_buffer = unpack_optional_array(
-        serial_splits, serial_branch_size, dims, EMPTY_PLACEHOLDER);
+        serial_splits, serial_branch_size, n_components, EMPTY_PLACEHOLDER);
   }
 
   // merged_array contains the values which results from merging a right branch
@@ -372,12 +332,12 @@ data_type *finalize(int &size) {
     MPI_Recv(&right_branch_size, 1, MPI_INT, right_rank,
              TAG_RIGHT_PROCESS_N_ITEMS, MPI_COMM_WORLD, &status);
 
-    right_branch_buffer = new data_type[right_branch_size * dims];
+    right_branch_buffer = new data_type[right_branch_size * n_components];
 
     // we gather the branch from another process
-    MPI_Recv(right_branch_buffer, right_branch_size * dims, mpi_data_type,
-             right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD,
-             &status);
+    MPI_Recv(right_branch_buffer, right_branch_size * n_components,
+             mpi_data_type, right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER,
+             MPI_COMM_WORLD, &status);
 
     int branch_size = left_branch_size;
     if (right_branch_size != left_branch_size) {
@@ -387,9 +347,9 @@ data_type *finalize(int &size) {
       data_type *old_buffer =
           min == left_branch_size ? left_branch_buffer : right_branch_buffer;
 
-      data_type *temp = new data_type[max * dims];
-      std::memcpy(temp, old_buffer, min * dims * sizeof(data_type));
-      for (int i = min * dims; i < max * dims; ++i) {
+      data_type *temp = new data_type[max * n_components];
+      std::memcpy(temp, old_buffer, min * n_components * sizeof(data_type));
+      for (int i = min * n_components; i < max * n_components; ++i) {
         temp[i] = EMPTY_PLACEHOLDER;
       }
 
@@ -406,13 +366,13 @@ data_type *finalize(int &size) {
 
     DataPoint split_item = std::move(parallel_splits.at(i));
 
-    merging_array = new data_type[(branch_size * 2 + 1) * dims];
+    merging_array = new data_type[(branch_size * 2 + 1) * n_components];
 
     // the root of this tree is the data point used to split left and right
     split_item.copy_to_array(merging_array);
 
-    rearrange_branches(merging_array + dims, left_branch_buffer,
-                       right_branch_buffer, branch_size, dims);
+    rearrange_branches(merging_array + n_components, left_branch_buffer,
+                       right_branch_buffer, branch_size, n_components);
 
     delete[] right_branch_buffer;
     delete[] left_branch_buffer;
@@ -434,13 +394,13 @@ data_type *finalize(int &size) {
     MPI_Send(&left_branch_size, 1, MPI_INT, parent, TAG_RIGHT_PROCESS_N_ITEMS,
              MPI_COMM_WORLD);
 
-    MPI_Send(left_branch_buffer, left_branch_size * dims, mpi_data_type, parent,
-             TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
+    MPI_Send(left_branch_buffer, left_branch_size * n_components, mpi_data_type,
+             parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
     delete[] left_branch_buffer;
     return nullptr;
   } else {
     // this is the root process
-    size = left_branch_size;
+    *kdtree_size = left_branch_size;
     return left_branch_buffer;
   }
 }

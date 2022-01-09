@@ -10,26 +10,66 @@
 #include <iostream>
 #include <math.h>
 #include <mpi.h>
+#include <optional>
 #include <unistd.h>
 #include <vector>
-#include <optional>
 
-/**
- * @brief Generate a k-d tree a set of k-dimensional data using MPI.
- *
- * Generate a k-d tree from the given `data` using MPI.
- *
- * If this process is not the main MPI process (i.e. it does not rank 0), the
- * process freezes until another thread sends some work to perform. The control
- * is then returned to the calling function as soon as the work assigned to
- * this process is done, or some other process notifies that this process is not
- * going to be used in the construction of the tree.
- *
- * @param data 1D array of data, `k` consecutive items constitute a data point
- *              in the dataset.
- * @param size Dimension of the dataset, i.e. `length(data) / dms`.
- * @param dms  Number of components that constitute a data point in the dataset.
- * @return The root of the tree (i.e. the first data point used to split the
- *          dataset).
- */
-KNode<data_type> *generate_kd_tree(data_type *data, int size, int dms);
+class KDTreeGreenhouse {
+private:
+  int n_datapoints;
+  int n_components;
+
+  // rank of the parent process of this process
+  int parent = -1;
+
+  // rank of this process
+  int rank = -1;
+
+  // number of MPI processes available
+  int n_processes = -1;
+
+  // maximum depth of the tree at which we can parallelize. after this depth no
+  // more right-branches can be assigned to non-surplus processes
+  int max_depth = 0;
+
+  // number of additional processes that are not enough to parallelize an entire
+  // level of the tree, they are assigned left-to-right until there are no more
+  // surplus processes
+  int surplus_processes = 0;
+
+  // number of items assigned serially (i.e. non-parallelizable) to this process
+  int serial_branch_size = 0;
+
+  // DataPoint used to split a branch assigned to this process. this process
+  // then received the left branch resulting from the split.
+  std::vector<DataPoint> parallel_splits;
+
+  // DataPoints in the serial branch assigned to this process. see also
+  // build_tree_serial
+  std::optional<DataPoint> *serial_splits = nullptr;
+
+  // children of this process, i.e. processes that received a right branch from
+  // this process
+  std::vector<int> children;
+
+  KNode<data_type> *grown_kd_tree = nullptr;
+
+  void build_tree(std::vector<DataPoint>::iterator first_data_point,
+                  std::vector<DataPoint>::iterator end_data_point, int depth);
+
+  void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
+                         std::vector<DataPoint>::iterator end_data_point,
+                         int depth, int region_width, int region_start_index,
+                         int branch_starting_index);
+  data_type * finalize(int *kdtree_size);
+
+  void grow_kd_tree(data_type *data, int starting_depth);
+
+  int grown_kdtree_size;
+
+public:
+  KDTreeGreenhouse(data_type *data, int n_datapoints, int n_components);
+
+  KNode<data_type> *get_grown_kdtree() { return grown_kd_tree; }
+  int get_grown_kdtree_size() { return grown_kdtree_size; }
+};

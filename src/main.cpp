@@ -11,14 +11,16 @@ int main(int argc, char **argv) {
   // number of data points and number of components per data point in the
   // dataset
   int n_data_points, n_dims;
-  // the dataset as a 1D array, DIMS consecutive items of dt are a data point
+  // the dataset as a 1D array, DIMS consecutive items of dt are a data point.
+  // with MPI, this reads only on process 0.
   data_type *dt = read_file_serial(filename, &n_data_points, &n_dims);
 
 #ifdef TIME
   double start_time = get_time();
 #endif
 
-  KNode<data_type> *tree = generate_kd_tree(dt, n_data_points, n_dims);
+  KNode<data_type> *tree =
+      KDTreeGreenhouse(dt, n_data_points, n_dims).get_grown_kdtree();
 
 #ifdef TIME
   // output the time needed to build the k-d tree
@@ -43,8 +45,6 @@ int main(int argc, char **argv) {
     log_message("You supplied an output file name, but you did not compile "
                 "with `make file`.");
 #endif
-
-  delete tree;
 
   finalize_parallel_environment();
 }
