@@ -1,8 +1,8 @@
 #pragma once
 
 #include "data_point.h"
+#include "knode.h"
 #include "process_utils.h"
-#include "tree.h"
 #include "utils.h"
 
 #include <algorithm>
@@ -50,9 +50,6 @@ private:
   // child process are to be used in further parallel splittings
   int starting_depth = 0;
 
-  // rank of the parent process of this process
-  int parent = -1;
-
   // rank of this process
   int rank = -1;
 
@@ -71,36 +68,40 @@ private:
   // number of items assigned serially (i.e. non-parallelizable) to this process
   int serial_tree_size = 0;
 
-  // DataPoint used to split a branch assigned to this process. this process
-  // then received the left branch resulting from the split.
-  std::vector<DataPoint> parallel_splits;
-
   // DataPoints in the serial branch assigned to this process. see also
   // build_tree_serial
   std::optional<DataPoint> *serial_tree = nullptr;
 
+#ifdef USE_MPI
+  // rank of the parent process of this process
+  int parent = -1;
+
+  // DataPoint used to split a branch assigned to this process. this process
+  // then received the left branch resulting from the split.
+  std::vector<DataPoint> parallel_splits;
+
   // children of this process, i.e. processes that received a right branch from
   // this process
   std::vector<int> children;
+#endif
 
+  int grown_kdtree_size;
   KNode<data_type> *grown_kd_tree = nullptr;
+
+  data_type *grow_kd_tree(std::vector<DataPoint> data_points);
 
 #ifdef USE_MPI
   data_type *retrieve_dataset_info();
-  void build_tree(std::vector<DataPoint>::iterator first_data_point,
-                  std::vector<DataPoint>::iterator end_data_point, int depth);
+  void build_tree_parallel(std::vector<DataPoint>::iterator first_data_point,
+                           std::vector<DataPoint>::iterator end_data_point,
+                           int depth);
 #endif
 
   void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
                          std::vector<DataPoint>::iterator end_data_point,
                          int depth, int region_width, int region_start_index,
                          int branch_starting_index);
-  data_type *finalize(int *kdtree_size);
-
-  void grow_kd_tree(data_type *data);
-  void growing_entry_point(std::vector<DataPoint> data_points);
-
-  int grown_kdtree_size;
+  data_type *finalize();
 
 public:
   KDTreeGreenhouse(data_type *data, int n_datapoints, int n_components);

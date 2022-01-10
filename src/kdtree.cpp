@@ -14,43 +14,16 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, int n_datapoints,
   }
 
   // 1D representation of our KDTree, or nullptr (if not main process)
-  grow_kd_tree(data);
+  data_type *tree = grow_kd_tree(
+      as_data_points(data, this->n_datapoints, this->n_components));
+  grown_kd_tree =
+      convert_to_knodes(tree, grown_kdtree_size, this->n_components, 0, 1, 0);
 
   if (should_delete_data)
     delete[] data;
 }
 
-void KDTreeGreenhouse::grow_kd_tree(data_type *data) {
-#ifdef MPI_DEBUG
-  int debug_rank = atoi(getenv("MPI_DEBUG_RANK"));
-  std::cerr << "MPI_DEBUG_RANK=" << atoi(getenv("MPI_DEBUG_RANK")) << std::endl;
-  if (rank == debug_rank) {
-    volatile int i = 0;
-    char hostname[256];
-    gethostname(hostname, sizeof(hostname));
-    printf("PID %d on %s ready for attach\n", getpid(), hostname);
-    fflush(stdout);
-    while (0 == i)
-      sleep(5);
-  }
-#endif
-
-  std::vector<DataPoint> data_points;
-  data_points.reserve(n_datapoints);
-  for (int i = 0; i < n_datapoints; i++) {
-    data_points.push_back(DataPoint(data + i * n_components));
-  }
-
-  growing_entry_point(data_points);
-
-  int kdtree_size;
-  data_type *tree = finalize(&kdtree_size);
-
-  grown_kdtree_size = kdtree_size;
-  grown_kd_tree = convert_to_knodes(tree, kdtree_size, n_components, 0, 1, 0);
-}
-
-void KDTreeGreenhouse::growing_entry_point(std::vector<DataPoint> data_points) {
+data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
 #pragma omp parallel
   {
 #pragma omp single
@@ -62,7 +35,8 @@ void KDTreeGreenhouse::growing_entry_point(std::vector<DataPoint> data_points) {
       rank = get_rank();
 
 #ifdef USE_MPI
-      build_tree(data_points.begin(), data_points.end(), starting_depth);
+      build_tree_parallel(data_points.begin(), data_points.end(),
+                          starting_depth);
 #else
       // we want to store the tree (in a temporary way) in an array whose size
       // is a powersum of two
@@ -73,6 +47,8 @@ void KDTreeGreenhouse::growing_entry_point(std::vector<DataPoint> data_points) {
 #endif
     }
   }
+
+  return finalize();
 }
 
 /*

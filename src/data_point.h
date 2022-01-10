@@ -1,9 +1,8 @@
 #pragma once
 
-#include "tree.h"
+#include "knode.h"
 
 #include <cstring>
-#include <vector>
 
 class DataPoint {
 private:

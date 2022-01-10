@@ -1,6 +1,7 @@
 #pragma once
 
-#include "tree.h"
+#include "knode.h"
+
 #include <iostream>
 
 template class KNode<data_type>;

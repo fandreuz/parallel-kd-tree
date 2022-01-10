@@ -1,7 +1,7 @@
 #pragma once
 
 #include "data_point.h"
-#include "tree.h"
+#include "knode.h"
 
 #include <algorithm>
 #include <cstring>
@@ -144,26 +144,44 @@ inline int select_splitting_dimension(int depth, int dims) {
 }
 
 /**
-   Sort the given array such that the element in the middle is exactly the
-   median with respect to the given axis, and all the items before and
-   after are respectively lower/greater than that item.
+ * Sort the given array such that the element in the middle is exactly the
+ * median with respect to the given axis, and all the items before and
+ * after are respectively lower/greater than that item.
 
-   @param array Array to be sorted.
-   @param size Number of items in array.
-   @param axis Axis along which the sorting must be done.
+ * @param array Array to be sorted.
+ * @param size Number of items in array.
+ * @param axis Axis along which the sorting must be done.
 */
 int sort_and_split(DataPoint *array, int size, int axis);
 
 /**
-   Sort the given vector such that the element in the middle is exactly the
-   median with respect to the given axis, and all the items before and
-   after are respectively lower/greater than that item.
-
-   @param first_data_point An iterator pointing to the first data point in the
-                           sequence to be sorted.
-   @param end_data_point An iterator pointing past the last data point in the
-                           sequence to be sorted.
-   @param axis Axis along which the sorting must be done.
+ * Sort the given vector such that the element in the middle is exactly the
+ * median with respect to the given axis, and all the items before and
+ * after are respectively lower/greater than that item.
+ *
+ * @param first_data_point An iterator pointing to the first data point in the
+ *                         sequence to be sorted.
+ * @param end_data_point An iterator pointing past the last data point in the
+ *                         sequence to be sorted.
+ * @param axis Axis along which the sorting must be done.
 */
 int sort_and_split(std::vector<DataPoint>::iterator first_data_point,
                    std::vector<DataPoint>::iterator end_data_point, int axis);
+
+/**
+ * @brief Return the given array of values as a vector of `DataPoints`.
+ *
+ * @param data An array of values of size `n_datapoints*n_components`.
+ * @param n_datapoints The number of data points in the dataset.
+ * @param n_components The number of components per each data point.
+ * @return std::vector<DataPoint>
+ */
+inline std::vector<DataPoint> as_data_points(data_type *data, int n_datapoints,
+                                             int n_components) {
+  std::vector<DataPoint> data_points;
+  data_points.reserve(n_datapoints);
+  for (int i = 0; i < n_datapoints; i++) {
+    data_points.push_back(DataPoint(data + i * n_components));
+  }
+  return data_points;
+}

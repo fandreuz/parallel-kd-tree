@@ -47,9 +47,26 @@ data_type *KDTreeGreenhouse::retrieve_dataset_info() {
    - depth is the depth of a node created by a call to build_tree. depth starts
     from 0
 */
-void KDTreeGreenhouse::build_tree(
+void KDTreeGreenhouse::build_tree_parallel(
     std::vector<DataPoint>::iterator first_data_point,
     std::vector<DataPoint>::iterator end_data_point, int depth) {
+#ifdef MPI_DEBUG
+  if (depth == starting_depth) {
+    int debug_rank = atoi(getenv("MPI_DEBUG_RANK"));
+    std::cerr << "MPI_DEBUG_RANK=" << atoi(getenv("MPI_DEBUG_RANK"))
+              << std::endl;
+    if (rank == debug_rank) {
+      volatile int i = 0;
+      char hostname[256];
+      gethostname(hostname, sizeof(hostname));
+      printf("PID %d on %s ready for attach\n", getpid(), hostname);
+      fflush(stdout);
+      while (0 == i)
+        sleep(5);
+    }
+  }
+#endif
+
   int next_depth = depth + 1;
 
   if (n_datapoints <= 1 || next_depth > max_depth + 1 ||
@@ -135,12 +152,13 @@ void KDTreeGreenhouse::build_tree(
 
     if (split_point_idx != 0) {
       // this process takes care of the left part
-      build_tree(first_data_point, right_branch_first_point - 1, next_depth);
+      build_tree_parallel(first_data_point, right_branch_first_point - 1,
+                          next_depth);
     }
   }
 }
 
-data_type *KDTreeGreenhouse::finalize(int *kdtree_size) {
+data_type *KDTreeGreenhouse::finalize() {
   // we wait for all the child processes to complete their work
   int n_children = children.size();
 
@@ -236,6 +254,6 @@ data_type *KDTreeGreenhouse::finalize(int *kdtree_size) {
     MPI_Send(left_branch_buffer, left_branch_size * n_components, mpi_data_type,
              parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
   }
-  *kdtree_size = left_branch_size;
+  grown_kdtree_size = left_branch_size;
   return left_branch_buffer;
 }
