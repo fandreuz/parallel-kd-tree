@@ -203,6 +203,7 @@ There are some configurations available:
 #   point_size=75)
 >>> v = KDTreeVisualization(
 ...     plane_alpha=0.2, intersection_lines_width=1, point_size=100
+... )
 >>> v.visualize(root)
 ```
 
