@@ -208,7 +208,7 @@ data_type *KDTreeGreenhouse::finalize(int *kdtree_size) {
     merging_array = new data_type[(branch_size * 2 + 1) * n_components];
 
     // the root of this tree is the data point used to split left and right
-    split_item.copy_to_array(merging_array);
+    split_item.copy_to_array(merging_array, n_components);
 
     rearrange_branches(merging_array + n_components, left_branch_buffer,
                        right_branch_buffer, branch_size, n_components);

@@ -2,18 +2,18 @@
 
 #include "tree.h"
 
-#include <vector>
 #include <cstring>
+#include <vector>
 
 class DataPoint {
 private:
-  std::vector<data_type> data;
+  data_type *data;
 
 public:
-  DataPoint(data_type *values, int size) { data.assign(values, values + size); }
+  DataPoint(data_type *values) { data = values; }
   data_type operator[](int index) const { return data[index]; }
-  void copy_to_array(data_type *array) const {
-    std::memcpy(array, data.data(), data.size() * sizeof(data_type));
+  void copy_to_array(data_type *array, int n_components) const {
+    std::memcpy(array, data, n_components * sizeof(data_type));
   }
 };
 

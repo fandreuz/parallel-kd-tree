@@ -38,7 +38,7 @@ void KDTreeGreenhouse::grow_kd_tree(data_type *data) {
   std::vector<DataPoint> data_points;
   data_points.reserve(n_datapoints);
   for (int i = 0; i < n_datapoints; i++) {
-    data_points.push_back(DataPoint(data + i * n_components, n_components));
+    data_points.push_back(DataPoint(data + i * n_components));
   }
 
   growing_entry_point(data_points);
