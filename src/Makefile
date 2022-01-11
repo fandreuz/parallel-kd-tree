@@ -1,6 +1,5 @@
 # Makefile for the K-D tree.
 #
-# make compile	 ----> Compile the source code.
 # make debug	 ----> Show both the output and debug messages during the
 # 				       construction of the tree.
 # make output    ----> Show the binary tree (and nothing else).

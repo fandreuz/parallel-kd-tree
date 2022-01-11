@@ -67,23 +67,17 @@ to distribute the work easily.
 
 ## Compile
 
-Download the source code with `git clone https://github.com/fAndreuzzi/kd-tree.git`,
-then navigate to the folder `src` and compile the source using the makefile.
-The following recipes are available:
+Clone the repository and navigate to the folder `src`. A `Makefile` is
+available along with the following recipes:
 
-- `make output`: Show only the output (i.e. the textual representation of the
-  tree);
-- `make file`: Save the k-d tree as a CSV file, each node is saved in order of
-  increasing level starting from the root (left to right);
-- `make time`: Show only the time taken to build the k-d tree;
-- `make debug`: The binary produced will show both debug messages and output;
-- `make compile`: Compile the source code, the binary produced won't produce any
-  kind of output;
-- `make leaks`: Find memory leaks in the source code, does not produce any other
-  output;
-- `make mpidebug`: Prepare a binary that can be debugged using gdb (the rank
-  of the process to be controlled via gdb must be set via the environment
-  variable `MPI_DEBUG_RANK`).
+| Recipe     | Result                                                                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `output`   | Show only the output (i.e. the textual representation of the tree).                                                                                                 |
+| `file`     | Save the k-d tree as a CSV file, each node is saved in order of increasing level starting from the root (left to right).                                            |
+| `time`     | Show only the time it took to build the k-d tree.                                                                                                                   |
+| `debug`    | The binary produced will show both debug messages and output.                                                                                                       |
+| `leaks`    | Find memory leaks in the source code. The executable does not produce any output.                                                                                   |
+| `mpidebug` | Produces an executable that can be debugged using gdb (the rank of the process to be controlled via gdb must be set via the environment variable `MPI_DEBUG_RANK`). |
 
 Moreover, in order to choose between MPI and OpenMP, you should append the
 command-line parameter (e.g. `src=mpi`). By default (i.e. if `src` is omitted)
