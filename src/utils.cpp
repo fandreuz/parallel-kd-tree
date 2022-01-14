@@ -84,22 +84,22 @@ data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
 
   Remember to add a split point before this function call (if you need to).
 */
-void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
-                        int branches_size, int n_components) {
+void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
+                    int branches_size, int n_components) {
   int already_added = 0;
   // number of nodes in each branch (left and right) at the current level of
   // the tree
   int nodes = 1;
   while (already_added < 2 * branches_size) {
     // we put into the three what's inside the left subtree
-    std::memcpy(dest + already_added * n_components, branch1,
-                nodes * n_components * sizeof(data_type));
+    std::memcpy(dest, branch1, nodes * n_components * sizeof(data_type));
     branch1 += nodes * n_components;
+    dest += nodes * n_components;
 
     // we put into the three what's inside the right subtree
-    std::memcpy(dest + (nodes + already_added) * n_components, branch2,
-                nodes * n_components * sizeof(data_type));
+    std::memcpy(dest, branch2, nodes * n_components * sizeof(data_type));
     branch2 += nodes * n_components;
+    dest += nodes * n_components;
 
     // we just added left and right branch
     already_added += nodes * 2;
@@ -108,6 +108,54 @@ void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
   }
 }
 
+#ifdef ALTERNATIVE_SERIAL_WRITE
+void rearrange_kd_tree(data_type *dest, data_type *src, int n_datapoints,
+                       int n_components) {
+  std::vector<int> level_start;
+  level_start.push_back(0);
+  level_start.push_back(1);
+
+  std::vector<int> nodes_per_level;
+  nodes_per_level.push_back(1);
+  nodes_per_level.push_back(0);
+
+  // a counter which holds the value of all the powers of 2
+  std::vector<int> powers_of_two;
+  powers_of_two.push_back(1);
+  powers_of_two.push_back(2);
+
+  // we copy the first data point
+  std::memcpy(dest, src, n_components * sizeof(data_type));
+
+  int next_node_level = 1;
+
+  for (int i = 1; i < n_datapoints; ++i) {
+    int offset =
+        level_start[next_node_level] + nodes_per_level[next_node_level];
+    std::memcpy(dest + offset * n_components, src + i * n_components,
+                n_components * sizeof(data_type));
+
+    nodes_per_level[next_node_level]++;
+    if (level_start[next_node_level] + powers_of_two[next_node_level] <
+        n_datapoints) {
+      ++next_node_level;
+    } else {
+      for (; nodes_per_level[next_node_level] % 2 == 0 && next_node_level > 0;
+           --next_node_level)
+        ;
+    }
+
+    // we add one whole level to the three vectors
+    if ((int)level_start.size() <= next_node_level) {
+      nodes_per_level.push_back(0);
+      powers_of_two.push_back(powers_of_two[next_node_level - 1] * 2);
+      level_start.push_back(level_start[next_node_level - 1] +
+                            powers_of_two[next_node_level - 1]);
+    }
+  }
+}
+#endif
+
 /*
     Convert the given tree to a linked list structure. This assumes that
     the given size is a powersum of two.
@@ -115,8 +163,8 @@ void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
     - tree contains the array representation of the tree
     - size is the number of elements in `tree`
     - n_components is the number of components for each data point
-    - current_level_start contains the index of the first element of tree which
-        contains an element of the current node
+    - current_level_start contains the index of the first element of tree
+   which contains an element of the current node
     - current_level_nodes contains the number of elements in this level of the
         tree (each recursive call multiplies it by two)
     - start_offset contains the offset (starting from current_level_start) for
@@ -146,27 +194,27 @@ KNode<data_type> *convert_to_knodes(data_type *tree, int size, int n_components,
 }
 
 int sort_and_split(DataPoint *array, int size, int axis) {
-  // the second part of median_idx is needed to unbalance the split towards the
-  // left region (which is the one which may parallelize with the highest
+  // the second part of median_idx is needed to unbalance the split towards
+  // the left region (which is the one which may parallelize with the highest
   // probability).
   int median_idx = size / 2 - 1 * ((size + 1) % 2);
   std::nth_element(array, array + median_idx, array + size,
                    DataPointCompare(axis));
-  // if size is 2 we want to return the first element (the smallest one), since
-  // it will be placed into the first empty spot in serial_split
+  // if size is 2 we want to return the first element (the smallest one),
+  // since it will be placed into the first empty spot in serial_split
   return median_idx;
 }
 
 int sort_and_split(std::vector<DataPoint>::iterator first_data_point,
                    std::vector<DataPoint>::iterator last_data_point, int axis) {
   int size = std::distance(first_data_point, last_data_point);
-  // the second part of median_idx is needed to unbalance the split towards the
-  // left region (which is the one which may parallelize with the highest
+  // the second part of median_idx is needed to unbalance the split towards
+  // the left region (which is the one which may parallelize with the highest
   // probability).
   int median_idx = size / 2 - 1 * ((size + 1) % 2);
   std::nth_element(first_data_point, first_data_point + median_idx,
                    last_data_point, DataPointCompare(axis));
-  // if size is 2 we want to return the first element (the smallest one), since
-  // it will be placed into the first empty spot in serial_split
+  // if size is 2 we want to return the first element (the smallest one),
+  // since it will be placed into the first empty spot in serial_split
   return median_idx;
 }

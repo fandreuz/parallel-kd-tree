@@ -89,7 +89,15 @@ void KDTreeGreenhouse::build_tree_parallel(
       // n_datapoints < bigger_powersum_of_two
       serial_tree = new std::optional<DataPoint>[serial_tree_size];
 
-      build_tree_serial(first_data_point, end_data_point, depth, 1, 0, 0);
+      int starting_region_width;
+#ifdef ALTERNATIVE_SERIAL_WRITE
+      starting_region_width = serial_tree_size;
+#else
+      starting_region_width = 1;
+#endif
+
+      build_tree_serial(first_data_point, end_data_point, depth,
+                        starting_region_width, 0, 0);
     }
 
     // this process should have called a surplus process to do some stuff, but
@@ -177,6 +185,14 @@ data_type *KDTreeGreenhouse::finalize() {
   if (serial_tree_size > 0) {
     left_branch_buffer = unpack_optional_array(serial_tree, serial_tree_size,
                                                n_components, EMPTY_PLACEHOLDER);
+#ifdef ALTERNATIVE_SERIAL_WRITE
+    data_type *temp_left_buffer =
+        new data_type[serial_tree_size * n_components];
+    rearrange_kd_tree(temp_left_buffer, left_branch_buffer, serial_tree_size,
+                       n_components);
+    delete[] left_branch_buffer;
+    left_branch_buffer = temp_left_buffer;
+#endif
   }
 
   // merged_array contains the values which results from merging a right branch
@@ -228,8 +244,8 @@ data_type *KDTreeGreenhouse::finalize() {
     // the root of this tree is the data point used to split left and right
     split_item.copy_to_array(merging_array, n_components);
 
-    rearrange_branches(merging_array + n_components, left_branch_buffer,
-                       right_branch_buffer, branch_size, n_components);
+    merge_kd_trees(merging_array + n_components, left_branch_buffer,
+                   right_branch_buffer, branch_size, n_components);
 
     delete[] right_branch_buffer;
     delete[] left_branch_buffer;

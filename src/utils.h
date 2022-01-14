@@ -94,7 +94,7 @@ data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
                                  int n_components, data_type fallback_value);
 
 /**
- * @brief Rearrange `branch1`, `branch2` into a single array.
+ * @brief Rearrange the two k-d trees `branch1`, `branch2` into a single array.
  *
  * Rearranges `branch1` and `branch2` into `dest` in such a way that:
  *
@@ -113,8 +113,24 @@ data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
  *                        dimensions).
  * @param n_components    Number of dimensions for each data point.
  */
-void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
-                        int branches_size, int n_components);
+void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
+                    int branches_size, int n_components);
+
+#ifdef ALTERNATIVE_SERIAL_WRITE
+/**
+ * @brief Rearrange a k-d tree stored in a bisectional way.
+ *
+ * @param dest    1D array in which we are going to store the content of
+ *                  `branch1`, `branch2`.
+ * @param src The source k-d tree.
+ * @param branches_size Size of `branch1` and `branch2` (number of data points,
+ *                        **not** number of data points times the number of
+ *                        dimensions).
+ * @param n_components    Number of dimensions for each data point.
+ */
+void rearrange_kd_tree(data_type *dest, data_type *src, int n_datapoints,
+                       int n_components);
+#endif
 
 /**
  * @brief Convert the given tree to a kind-of linked list structure. This

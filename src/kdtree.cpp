@@ -43,7 +43,15 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
       serial_tree_size = bigger_powersum_of_two(n_datapoints);
       serial_tree = new std::optional<DataPoint>[serial_tree_size];
 
-      build_tree_serial(data_points.begin(), data_points.end(), 0, 1, 0, 0);
+      int starting_region_width;
+#ifdef ALTERNATIVE_SERIAL_WRITE
+      starting_region_width = serial_tree_size;
+#else
+      starting_region_width = 1;
+#endif
+
+      build_tree_serial(data_points.begin(), data_points.end(), 0,
+                        starting_region_width, 0, 0);
 #endif
     }
   }
@@ -82,6 +90,9 @@ void KDTreeGreenhouse::build_tree_serial(
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
+    // if we encounter the flaf ALTERNATIVE_SERIAL_WRITE the parameter
+    // branch_starting_index will always be zero, therefore it does not
+    // interphere with this writing.
     serial_tree[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*first_data_point)));
   } else {
@@ -99,10 +110,32 @@ void KDTreeGreenhouse::build_tree_serial(
     serial_tree[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*(first_data_point + split_point_idx))));
 
+    int region_start_index_left = -1, region_start_index_right = -1;
+    int branch_start_index_left = -1, branch_start_index_right = -1;
+
     // we update the values for the next iteration
-    region_start_index += region_width;
+#ifdef ALTERNATIVE_SERIAL_WRITE
+    // the two processes which handle the halves are going to have less space
+    // at their disposal
+    region_width = (region_width - 1) / 2;
+    // in this case we divide the available space in two halves and assign each
+    // half to the two processes/threads
+    region_start_index_left = region_start_index + 1;
+    region_start_index_right = region_start_index_left + region_width;
+
+    branch_start_index_left = branch_start_index_right = 0;
+#else
+    region_start_index_left = region_start_index_right =
+        region_start_index + region_width;
+
+    // the width of the next level will be twice the width of the current
+    // level
     region_width *= 2;
+
     branch_starting_index *= 2;
+    branch_start_index_left = branch_starting_index;
+    branch_start_index_right = branch_starting_index + 1;
+#endif
     depth += 1;
 
 // in case we're on OpenMP, we need to understand whether we can spawn more
@@ -119,14 +152,14 @@ void KDTreeGreenhouse::build_tree_serial(
     {
       // right
       build_tree_serial(right_branch_first_point, end_data_point, depth,
-                        region_width, region_start_index,
-                        branch_starting_index + 1);
+                        region_width, region_start_index_right,
+                        branch_start_index_right);
     }
     // left
     if (split_point_idx > 0)
       build_tree_serial(first_data_point, right_branch_first_point - 1, depth,
-                        region_width, region_start_index,
-                        branch_starting_index);
+                        region_width, region_start_index_left,
+                        branch_start_index_left);
 
 // there are variables on the stack, we should wait before letting this
 // function die. this is not a big deal since all recursive call are going to
