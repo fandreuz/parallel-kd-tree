@@ -44,52 +44,54 @@ int smaller_powersum_of_two(int n);
 
 /**
  * @brief Transform the given array of data points in a 1D array such that
- *          `dims` contiguous items constitute a data point.
+ *          `n_components` contiguous items constitute a data point.
  *
  * @param array 1D array of data points.
  * @param size  Number of data points in the array (i.e. `length(array)`).
- * @param dims  Number of components for each data point.
- * @return data_type* A 1D array of size `size*dims`.
+ * @param n_components  Number of components for each data point.
+ * @return data_type* A 1D array of size `size*n_components`.
  */
-data_type *unpack_array(DataPoint *array, int size, int dims);
+data_type *unpack_array(DataPoint *array, int size, int n_components);
 
 /**
  * @brief Transform the given sequence of data points in a 1D array such that
- *          `dims` contiguous items constitute a data point.
+ *          `n_components` contiguous items constitute a data point.
  *
  * @param first_point Iterator pointing to the first item of the sequence.
  * @param last_point Iterator pointing past the last item of the sequence.
- * @param dims  Number of components for each data point.
- * @return data_type* A 1D array of size `size*dims`.
+ * @param n_components  Number of components for each data point.
+ * @return data_type* A 1D array of size `size*n_components`.
  */
 data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
-                        std::vector<DataPoint>::iterator last_point, int dims);
+                        std::vector<DataPoint>::iterator last_point,
+                        int n_components);
 
 /**
  * @brief Transform the given array (which may contain uninitialized values)
- *          of data points in a 1D array such that `dims` contiguous items
- *          constitute a data point.
+ *          of data points in a 1D array such that `n_components` contiguous
+ * items constitute a data point.
  *
  * Transform the given array of data points, that potentially contains several
- * uninitialized items, in a 1D array such that `dims` contiguous items
+ * uninitialized items, in a 1D array such that `n_components` contiguous items
  * constitute a data point.
  *
  * `uninitialized` items are spotted using the boolean array `initialized`, and
- * are represented in the output with `dims` consecutive `EMPTY_PLACEHOLDER`.
+ * are represented in the output with `n_components` consecutive
+ * `EMPTY_PLACEHOLDER`.
  *
  * @param array 1D array of data points.
  * @param size  Number of data points in the array (i.e. `length(array)`).
- * @param dims  Number of components for each data point.
+ * @param n_components  Number of components for each data point.
  * @param initialized A 1D boolean array (same size of `array`) whose i-th
  *                      element is `true` if and only if the i-th element of
  *                      `array` has been initialized.
- * @return data_type* A 1D array of size `size*dims`.
+ * @return data_type* A 1D array of size `size*n_components`.
  */
-data_type *unpack_risky_array(DataPoint *array, int size, int dims,
+data_type *unpack_risky_array(DataPoint *array, int size, int n_components,
                               bool *initialized);
 
 data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
-                                 int dims, data_type fallback_value);
+                                 int n_components, data_type fallback_value);
 
 /**
  * @brief Rearrange `branch1`, `branch2` into a single array.
@@ -109,10 +111,10 @@ data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
  * @param branches_size Size of `branch1` and `branch2` (number of data points,
  *                        **not** number of data points times the number of
  *                        dimensions).
- * @param dims    Number of dimensions for each data point.
+ * @param n_components    Number of dimensions for each data point.
  */
 void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
-                        int branches_size, int dims);
+                        int branches_size, int n_components);
 
 /**
  * @brief Convert the given tree to a kind-of linked list structure. This
@@ -120,7 +122,7 @@ void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
  *
  * @param tree The 1D array representation of the tree.
  * @param size Number of data points in `tree`
- * @param dims Number of components for each data point.
+ * @param n_components Number of components for each data point.
  * @param current_level_start Index of the first element of `tree` which
  *                             contains an element of the current node.
  * @param current_level_nodes Number of elements in this level of the tree (each
@@ -129,7 +131,7 @@ void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
  *                      located the root node of the subtree represented by this
  *                      recursive call.
  */
-KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
+KNode<data_type> *convert_to_knodes(data_type *tree, int size, int n_components,
                                     int current_level_start,
                                     int current_level_nodes, int start_offset);
 
@@ -139,8 +141,8 @@ KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
  * @param depth The depth of the tree at this point, might be used in order
  *                to balance the choice of the axes.
  */
-inline int select_splitting_dimension(int depth, int dims) {
-  return depth % dims;
+inline int select_splitting_dimension(int depth, int n_components) {
+  return depth % n_components;
 }
 
 /**
@@ -164,7 +166,7 @@ int sort_and_split(DataPoint *array, int size, int axis);
  * @param end_data_point An iterator pointing past the last data point in the
  *                         sequence to be sorted.
  * @param axis Axis along which the sorting must be done.
-*/
+ */
 int sort_and_split(std::vector<DataPoint>::iterator first_data_point,
                    std::vector<DataPoint>::iterator end_data_point, int axis);
 

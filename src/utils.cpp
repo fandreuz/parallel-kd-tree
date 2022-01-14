@@ -20,39 +20,40 @@ int smaller_powersum_of_two(int n) {
   return N - base / 2;
 }
 
-// transform the given DataPoint array in a 1D array such that `dims` contiguous
-// items constitute a data point
-data_type *unpack_array(DataPoint *array, int size, int dims) {
-  data_type *unpacked = new data_type[size * dims];
+// transform the given DataPoint array in a 1D array such that `n_components`
+// contiguous items constitute a data point
+data_type *unpack_array(DataPoint *array, int size, int n_components) {
+  data_type *unpacked = new data_type[size * n_components];
   for (int i = 0; i < size; ++i) {
-    array[i].copy_to_array(unpacked + i * dims, dims);
+    array[i].copy_to_array(unpacked + i * n_components, n_components);
   }
   return unpacked;
 }
 
 data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
-                        std::vector<DataPoint>::iterator last_point, int dims) {
+                        std::vector<DataPoint>::iterator last_point,
+                        int n_components) {
   data_type *unpacked =
-      new data_type[std::distance(first_point, last_point) * dims];
+      new data_type[std::distance(first_point, last_point) * n_components];
 
   int offset = 0;
   for (auto i = first_point; i != last_point; ++i) {
-    (*i).copy_to_array(unpacked + offset, dims);
-    offset += dims;
+    (*i).copy_to_array(unpacked + offset, n_components);
+    offset += n_components;
   }
   return unpacked;
 }
 
 // unpack an array which may contain uninitialized items
-data_type *unpack_risky_array(DataPoint *array, int size, int dims,
+data_type *unpack_risky_array(DataPoint *array, int size, int n_components,
                               bool *initialized) {
-  data_type *unpacked = new data_type[size * dims];
+  data_type *unpacked = new data_type[size * n_components];
   for (int i = 0; i < size; ++i) {
     if (initialized[i]) {
-      array[i].copy_to_array(unpacked + i * dims, dims);
+      array[i].copy_to_array(unpacked + i * n_components, n_components);
     } else {
-      for (int j = 0; j < dims; ++j) {
-        unpacked[i * dims + j] = EMPTY_PLACEHOLDER;
+      for (int j = 0; j < n_components; ++j) {
+        unpacked[i * n_components + j] = EMPTY_PLACEHOLDER;
       }
     }
   }
@@ -60,14 +61,14 @@ data_type *unpack_risky_array(DataPoint *array, int size, int dims,
 }
 
 data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
-                                 int dims, data_type fallback_value) {
-  data_type *unpacked = new data_type[size * dims];
+                                 int n_components, data_type fallback_value) {
+  data_type *unpacked = new data_type[size * n_components];
   for (int i = 0; i < size; ++i) {
     if (array[i].has_value()) {
       DataPoint dp = std::move(*array[i]);
-      dp.copy_to_array(unpacked + i * dims, dims);
+      dp.copy_to_array(unpacked + i * n_components, n_components);
     } else {
-      std::fill_n(unpacked + i * dims, dims, fallback_value);
+      std::fill_n(unpacked + i * n_components, n_components, fallback_value);
     }
   }
   return unpacked;
@@ -84,21 +85,21 @@ data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
   Remember to add a split point before this function call (if you need to).
 */
 void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
-                        int branches_size, int dims) {
+                        int branches_size, int n_components) {
   int already_added = 0;
-  // number of nodes in each branch (left and right)at the current level of
+  // number of nodes in each branch (left and right) at the current level of
   // the tree
   int nodes = 1;
   while (already_added < 2 * branches_size) {
     // we put into the three what's inside the left subtree
-    std::memcpy(dest + already_added * dims, branch1,
-                nodes * dims * sizeof(data_type));
-    branch1 += nodes * dims;
+    std::memcpy(dest + already_added * n_components, branch1,
+                nodes * n_components * sizeof(data_type));
+    branch1 += nodes * n_components;
 
     // we put into the three what's inside the right subtree
-    std::memcpy(dest + (nodes + already_added) * dims, branch2,
-                nodes * dims * sizeof(data_type));
-    branch2 += nodes * dims;
+    std::memcpy(dest + (nodes + already_added) * n_components, branch2,
+                nodes * n_components * sizeof(data_type));
+    branch2 += nodes * n_components;
 
     // we just added left and right branch
     already_added += nodes * 2;
@@ -113,7 +114,7 @@ void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
 
     - tree contains the array representation of the tree
     - size is the number of elements in `tree`
-    - dims is the number of components for each data point
+    - n_components is the number of components for each data point
     - current_level_start contains the index of the first element of tree which
         contains an element of the current node
     - current_level_nodes contains the number of elements in this level of the
@@ -121,26 +122,27 @@ void rearrange_branches(data_type *dest, data_type *branch1, data_type *branch2,
     - start_offset contains the offset (starting from current_level_start) for
         the root node of the subtree represented by this recursive call.
 */
-KNode<data_type> *convert_to_knodes(data_type *tree, int size, int dims,
+KNode<data_type> *convert_to_knodes(data_type *tree, int size, int n_components,
                                     int current_level_start,
                                     int current_level_nodes, int start_offset) {
-  int next_level_start = current_level_start + current_level_nodes * dims;
+  int next_level_start =
+      current_level_start + current_level_nodes * n_components;
   int next_level_nodes = current_level_nodes * 2;
   int next_start_offset = start_offset * 2;
 
-  if (next_level_start < size * dims) {
-    auto left = convert_to_knodes(tree, size, dims, next_level_start,
+  if (next_level_start < size * n_components) {
+    auto left = convert_to_knodes(tree, size, n_components, next_level_start,
                                   next_level_nodes, next_start_offset);
-    auto right = convert_to_knodes(tree, size, dims, next_level_start,
+    auto right = convert_to_knodes(tree, size, n_components, next_level_start,
                                    next_level_nodes, next_start_offset + 1);
 
-    return new KNode<data_type>(tree + current_level_start +
-                                    start_offset * dims,
-                                dims, left, right, current_level_start == 0);
+    return new KNode<data_type>(
+        tree + current_level_start + start_offset * n_components, n_components,
+        left, right, current_level_start == 0);
   } else
     return new KNode<data_type>(tree + current_level_start +
-                                    start_offset * dims,
-                                dims, nullptr, nullptr, false);
+                                    start_offset * n_components,
+                                n_components, nullptr, nullptr, false);
 }
 
 int sort_and_split(DataPoint *array, int size, int axis) {
