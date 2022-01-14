@@ -110,7 +110,7 @@ mpirun -np ... tree_mpi.x
 
 ### Specify a dataset
 
-By default the dataset used is the file `benchmark/benchmar1.csv`, but you can
+By default the dataset used is the file `benchmark/benchmark1.csv`, but you can
 specify your own dataset via a command line argument. Valid datasets are CSV
 files where each data point has the same number of components (one data point
 per row).
