@@ -109,48 +109,59 @@ void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
 }
 
 #ifdef ALTERNATIVE_SERIAL_WRITE
-void rearrange_kd_tree(data_type *dest, data_type *src, int n_datapoints,
-                       int n_components) {
+void rearrange_kd_tree(data_type *dest, data_type *src, int max_depth,
+                       int n_datapoints, int n_components) {
+  // the i-th element of level_start holds the index (in dest) of the first
+  // element of the i-th tree level.
   std::vector<int> level_start;
   level_start.push_back(0);
-  level_start.push_back(1);
 
-  std::vector<int> nodes_per_level;
-  nodes_per_level.push_back(1);
-  nodes_per_level.push_back(0);
+  // the i-th element of nodes_in_level holds the number of nodes already
+  // put into the i-th tree level.
+  std::vector<int> nodes_in_level;
+  nodes_in_level.push_back(1);
 
-  // a counter which holds the value of all the powers of 2
+  // the i-th element of powers_of_two holds 2^i. we do this to avoid using
+  // pow.
   std::vector<int> powers_of_two;
   powers_of_two.push_back(1);
-  powers_of_two.push_back(2);
 
-  // we copy the first data point
+  // we initialize the vectors with all the indexes we need.
+  for (int i = 1; i <= max_depth; ++i) {
+    nodes_in_level.push_back(0);
+    powers_of_two.push_back(powers_of_two[next_node_level - 1] * 2);
+    level_start.push_back(level_start[next_node_level - 1] +
+                          powers_of_two[next_node_level - 1]);
+  }
+
+  // we copy just the first data point
   std::memcpy(dest, src, n_components * sizeof(data_type));
 
+  // the level in which we expect to insert the next visited node.
   int next_node_level = 1;
 
   for (int i = 1; i < n_datapoints; ++i) {
-    int offset =
-        level_start[next_node_level] + nodes_per_level[next_node_level];
-    std::memcpy(dest + offset * n_components, src + i * n_components,
-                n_components * sizeof(data_type));
+    // first of all we insert the node being visisted in the first available
+    // spot in the proper tree level.
+    int first_available_spot =
+        level_start[next_node_level] + nodes_in_level[next_node_level];
+    std::memcpy(dest + first_available_spot * n_components,
+                src + i * n_components, n_components * sizeof(data_type));
 
-    nodes_per_level[next_node_level]++;
+    // we added one node to the level, therefore we update the appropriate
+    // counter.
+    nodes_in_level[next_node_level]++;
+
+    // if we are not in the last tree level, we try to go deeper.
     if (level_start[next_node_level] + powers_of_two[next_node_level] <
         n_datapoints) {
       ++next_node_level;
-    } else {
-      for (; nodes_per_level[next_node_level] % 2 == 0 && next_node_level > 0;
+    }
+    // we go up only when we reach the last tree level.
+    else {
+      for (; nodes_in_level[next_node_level] % 2 == 0 && next_node_level > 0;
            --next_node_level)
         ;
-    }
-
-    // we add one whole level to the three vectors
-    if ((int)level_start.size() <= next_node_level) {
-      nodes_per_level.push_back(0);
-      powers_of_two.push_back(powers_of_two[next_node_level - 1] * 2);
-      level_start.push_back(level_start[next_node_level - 1] +
-                            powers_of_two[next_node_level - 1]);
     }
   }
 }

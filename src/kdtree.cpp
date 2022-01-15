@@ -84,14 +84,27 @@ void KDTreeGreenhouse::build_tree_serial(
     std::vector<DataPoint>::iterator end_data_point, int depth,
     size_t region_width, size_t region_start_index,
     size_t branch_starting_index) {
+  // we update the maximum (serial) depth reached
+#pragma omp master
+  {
+    int parallel_depth;
+#ifdef USE_MPI
+    parallel_depth = max_depth;
+#else
+    parallel_depth = 0;
+#endif
+
+    int serial_depth = depth - parallel_depth;
+    max_serial_depth = std::max(max_serial_depth, depth);
+  }
+
   // this is equivalent to say that there is at most one data point in the
   // sequence
-  if (first_data_point == end_data_point ||
-      first_data_point + 1 == end_data_point) {
+  if (first_data_point + 1 == end_data_point) {
 #ifdef DEBUG
     std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
 #endif
-    // if we encounter the flaf ALTERNATIVE_SERIAL_WRITE the parameter
+    // if we encounter the flag ALTERNATIVE_SERIAL_WRITE the parameter
     // branch_starting_index will always be zero, therefore it does not
     // interphere with this writing.
     serial_tree[region_start_index + branch_starting_index].emplace(

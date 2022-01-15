@@ -67,6 +67,8 @@ private:
 
   // number of items assigned serially (i.e. non-parallelizable) to this process
   size_t serial_tree_size = 0;
+  // maximum depth of the serial sub-tree.
+  int max_serial_depth = 0;
 
   // DataPoints in the serial branch assigned to this process. see also
   // build_tree_serial

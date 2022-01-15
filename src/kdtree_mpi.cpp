@@ -192,8 +192,8 @@ data_type *KDTreeGreenhouse::finalize() {
 #ifdef ALTERNATIVE_SERIAL_WRITE
     data_type *temp_left_buffer =
         new data_type[serial_tree_size * n_components];
-    rearrange_kd_tree(temp_left_buffer, left_branch_buffer, serial_tree_size,
-                      n_components);
+    rearrange_kd_tree(temp_left_buffer, left_branch_buffer, max_serial_depth,
+                      serial_tree_size, n_components);
     delete[] left_branch_buffer;
     left_branch_buffer = temp_left_buffer;
 #endif
