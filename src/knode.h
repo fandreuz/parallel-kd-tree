@@ -50,6 +50,12 @@
 
 #endif
 
+#ifdef BIG
+using size_t = std::size_t;
+#else
+using size_t = int;
+#endif
+
 /**
  * @class
  * @brief A node of a k-d tree.

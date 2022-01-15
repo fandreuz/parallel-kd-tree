@@ -10,7 +10,8 @@ int main(int argc, char **argv) {
       argc > 1 ? argv[1] : "../benchmark/benchmark1.csv";
   // number of data points and number of components per data point in the
   // dataset
-  int n_data_points, n_dims;
+  std::size_t n_data_points;
+  int n_dims;
   // the dataset as a 1D array, DIMS consecutive items of dt are a data point.
   // with MPI, this reads only on process 0.
   data_type *dt = read_file_serial(filename, &n_data_points, &n_dims);

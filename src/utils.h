@@ -27,7 +27,7 @@
  *     bigger_powersum_of_two(5) = 7 = 1 + 2 + 4
  *     bigger_powersum_of_two(3) = 3 = 1 + 2
  */
-int bigger_powersum_of_two(int n);
+int bigger_powersum_of_two(size_t n);
 
 /**
  * @brief Return the biggest number N such that N <= n and N is a sum of powers
@@ -40,18 +40,20 @@ int bigger_powersum_of_two(int n);
  *     smaler_powersum_of_two(5) = 3 = 1 + 2
  *     smaller_powersum_of_two(7) = 7 = 1 + 2 + 4
  */
-int smaller_powersum_of_two(int n);
+int smaller_powersum_of_two(size_t n);
 
 /**
  * @brief Transform the given array of data points in a 1D array such that
  *          `n_components` contiguous items constitute a data point.
  *
  * @param array 1D array of data points.
- * @param size  Number of data points in the array (i.e. `length(array)`).
+ * @param n_datapoints  Number of data points in the array (i.e.
+ * `length(array)`).
  * @param n_components  Number of components for each data point.
  * @return data_type* A 1D array of size `size*n_components`.
  */
-data_type *unpack_array(DataPoint *array, int size, int n_components);
+data_type *unpack_array(DataPoint *array, size_t n_datapoints,
+                        int n_components);
 
 /**
  * @brief Transform the given sequence of data points in a 1D array such that
@@ -80,18 +82,20 @@ data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
  * `EMPTY_PLACEHOLDER`.
  *
  * @param array 1D array of data points.
- * @param size  Number of data points in the array (i.e. `length(array)`).
+ * @param n_datapoints  Number of data points in the array (i.e.
+ * `length(array)`).
  * @param n_components  Number of components for each data point.
  * @param initialized A 1D boolean array (same size of `array`) whose i-th
  *                      element is `true` if and only if the i-th element of
  *                      `array` has been initialized.
  * @return data_type* A 1D array of size `size*n_components`.
  */
-data_type *unpack_risky_array(DataPoint *array, int size, int n_components,
-                              bool *initialized);
+data_type *unpack_risky_array(DataPoint *array, size_t n_datapoints,
+                              int n_components, bool *initialized);
 
-data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
-                                 int n_components, data_type fallback_value);
+data_type *unpack_optional_array(std::optional<DataPoint> *array,
+                                 size_t n_datapoints, int n_components,
+                                 data_type fallback_value);
 
 /**
  * @brief Rearrange the two k-d trees `branch1`, `branch2` into a single array.
@@ -114,7 +118,7 @@ data_type *unpack_optional_array(std::optional<DataPoint> *array, int size,
  * @param n_components    Number of dimensions for each data point.
  */
 void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
-                    int branches_size, int n_components);
+                    size_t branches_size, int n_components);
 
 #ifdef ALTERNATIVE_SERIAL_WRITE
 /**
@@ -128,7 +132,7 @@ void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
  *                        dimensions).
  * @param n_components    Number of dimensions for each data point.
  */
-void rearrange_kd_tree(data_type *dest, data_type *src, int n_datapoints,
+void rearrange_kd_tree(data_type *dest, data_type *src, size_t n_datapoints,
                        int n_components);
 #endif
 
@@ -137,7 +141,7 @@ void rearrange_kd_tree(data_type *dest, data_type *src, int n_datapoints,
  * assumes that the given size is a powersum of two.
  *
  * @param tree The 1D array representation of the tree.
- * @param size Number of data points in `tree`
+ * @param n_datapoints Number of data points in `tree`
  * @param n_components Number of components for each data point.
  * @param current_level_start Index of the first element of `tree` which
  *                             contains an element of the current node.
@@ -147,8 +151,8 @@ void rearrange_kd_tree(data_type *dest, data_type *src, int n_datapoints,
  *                      located the root node of the subtree represented by this
  *                      recursive call.
  */
-KNode<data_type> *convert_to_knodes(data_type *tree, int size, int n_components,
-                                    int current_level_start,
+KNode<data_type> *convert_to_knodes(data_type *tree, size_t n_datapoints,
+                                    int n_components, int current_level_start,
                                     int current_level_nodes, int start_offset);
 
 /**
@@ -167,10 +171,10 @@ inline int select_splitting_dimension(int depth, int n_components) {
  * after are respectively lower/greater than that item.
 
  * @param array Array to be sorted.
- * @param size Number of items in array.
+ * @param n_datapoints Number of items in array.
  * @param axis Axis along which the sorting must be done.
 */
-int sort_and_split(DataPoint *array, int size, int axis);
+size_t sort_and_split(DataPoint *array, size_t n_datapoints, int axis);
 
 /**
  * Sort the given vector such that the element in the middle is exactly the
@@ -183,8 +187,9 @@ int sort_and_split(DataPoint *array, int size, int axis);
  *                         sequence to be sorted.
  * @param axis Axis along which the sorting must be done.
  */
-int sort_and_split(std::vector<DataPoint>::iterator first_data_point,
-                   std::vector<DataPoint>::iterator end_data_point, int axis);
+size_t sort_and_split(std::vector<DataPoint>::iterator first_data_point,
+                      std::vector<DataPoint>::iterator end_data_point,
+                      int axis);
 
 /**
  * @brief Return the given array of values as a vector of `DataPoints`.
@@ -194,8 +199,8 @@ int sort_and_split(std::vector<DataPoint>::iterator first_data_point,
  * @param n_components The number of components per each data point.
  * @return std::vector<DataPoint>
  */
-inline std::vector<DataPoint> as_data_points(data_type *data, int n_datapoints,
-                                             int n_components) {
+inline std::vector<DataPoint>
+as_data_points(data_type *data, size_t n_datapoints, int n_components) {
   std::vector<DataPoint> data_points;
   data_points.reserve(n_datapoints);
   for (int i = 0; i < n_datapoints; i++) {

@@ -1,6 +1,6 @@
 #include "kdtree.h"
 
-KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, int n_datapoints,
+KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, size_t n_datapoints,
                                    int n_components)
     : n_datapoints{n_datapoints}, n_components{n_components} {
   bool should_delete_data = false;
@@ -82,7 +82,8 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
 void KDTreeGreenhouse::build_tree_serial(
     std::vector<DataPoint>::iterator first_data_point,
     std::vector<DataPoint>::iterator end_data_point, int depth,
-    int region_width, int region_start_index, int branch_starting_index) {
+    size_t region_width, size_t region_start_index,
+    size_t branch_starting_index) {
   // this is equivalent to say that there is at most one data point in the
   // sequence
   if (first_data_point == end_data_point ||
@@ -97,7 +98,7 @@ void KDTreeGreenhouse::build_tree_serial(
         DataPoint(std::move(*first_data_point)));
   } else {
     int dimension = select_splitting_dimension(depth, n_components);
-    int split_point_idx =
+    size_t split_point_idx =
         sort_and_split(first_data_point, end_data_point, dimension);
 
 #ifdef DEBUG
@@ -110,8 +111,8 @@ void KDTreeGreenhouse::build_tree_serial(
     serial_tree[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*(first_data_point + split_point_idx))));
 
-    int region_start_index_left = -1, region_start_index_right = -1;
-    int branch_start_index_left = -1, branch_start_index_right = -1;
+    size_t region_start_index_left, region_start_index_right;
+    size_t branch_start_index_left, branch_start_index_right;
 
     // we update the values for the next iteration
 #ifdef ALTERNATIVE_SERIAL_WRITE

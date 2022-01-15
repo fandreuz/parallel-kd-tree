@@ -11,8 +11,8 @@
 #include <omp.h>
 #endif
 
-inline data_type *read_file_serial(const std::string filename, int *size,
-                                   int *dims) {
+inline data_type *read_file_serial(const std::string filename,
+                                   std::size_t *size, int *dims) {
 #ifdef USE_MPI
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

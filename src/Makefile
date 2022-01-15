@@ -18,47 +18,51 @@
 .DEFAULT_GOAL := output
 FLAGS = -std=c++17 -Wall -Wextra
 UTILITIES = main.cpp file_utils.cpp tree_printer.cpp utils.cpp kdtree.cpp
+ADDITIONAL_FLAGS =
 
 # OpenMP or MPI?
 ifeq ($(src), mpi)
 	SRC = kdtree_mpi.cpp
-	ADDITIONAL_FLAGS = -D USE_MPI
+	ADDITIONAL_FLAGS += -D USE_MPI
 	COMPILER = mpic++
 	OUT = tree_mpi.x
 else
 	SRC = kdtree_omp.cpp
-	ADDITIONAL_FLAGS = -fopenmp
+	ADDITIONAL_FLAGS += -fopenmp
 	COMPILER = g++
 	OUT = tree_omp.x
 endif
 
 # alternative writing mode?
 ifeq ($(write), alternative)
-	WRITE_MODE_FLAG = -D ALTERNATIVE_SERIAL_WRITE
-else
-	WRITE_MODE_FLAG =
+	ADDITIONAL_FLAGS += -D ALTERNATIVE_SERIAL_WRITE
+endif
+
+# alternative writing mode?
+ifeq ($(size), big)
+	ADDITIONAL_FLAGS += -D BIG
 endif
 
 compile:
-	$(COMPILER) $(FLAGS) $(WRITE_MODE_FLAG) $(ADDITIONAL_FLAGS) -O3 $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -O3 $(UTILITIES) $(SRC) -o $(OUT)
 
 debug:
-	$(COMPILER) $(FLAGS) $(WRITE_MODE_FLAG) $(ADDITIONAL_FLAGS) -g -D DEBUG -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -g -D DEBUG -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
 
 output:
-	$(COMPILER) $(FLAGS) $(WRITE_MODE_FLAG) $(ADDITIONAL_FLAGS) -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
 
 time:
-	$(COMPILER) $(FLAGS) $(WRITE_MODE_FLAG) $(ADDITIONAL_FLAGS) -D TIME -O3 $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -D TIME -O3 $(UTILITIES) $(SRC) -o $(OUT)
 
 leaks:
-	$(COMPILER) $(FLAGS) $(WRITE_MODE_FLAG) $(ADDITIONAL_FLAGS) -static-libasan -fsanitize=address -g -D DEBUG $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -static-libasan -fsanitize=address -g -D DEBUG $(UTILITIES) $(SRC) -o $(OUT)
 
 mpidebug:
-	$(COMPILER) $(FLAGS) $(WRITE_MODE_FLAG) $(ADDITIONAL_FLAGS) -g -D DEBUG -D MPI_DEBUG $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -g -D DEBUG -D MPI_DEBUG $(UTILITIES) $(SRC) -o $(OUT)
 
 file:
-	$(COMPILER) $(FLAGS) $(WRITE_MODE_FLAG) $(ADDITIONAL_FLAGS) -D STORE_TO_FILE $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -D STORE_TO_FILE $(UTILITIES) $(SRC) -o $(OUT)
 
 clean:
 	rm *.x

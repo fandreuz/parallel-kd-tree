@@ -114,7 +114,7 @@ void KDTreeGreenhouse::build_tree_parallel(
     }
   } else {
     int dimension = select_splitting_dimension(depth, n_components);
-    int split_point_idx =
+    size_t split_point_idx =
         sort_and_split(first_data_point, end_data_point, dimension);
 
 #ifdef DEBUG
@@ -127,6 +127,10 @@ void KDTreeGreenhouse::build_tree_parallel(
     int right_process_rank = compute_next_process_rank(
         rank, max_depth, next_depth, surplus_processes, n_parallel_workers);
     int right_branch_size = n_datapoints - split_point_idx - 1;
+    if (n_datapoints - split_point_idx - 1 != right_branch_size) {
+      throw std::invalid_argument(
+          "Cannot deal with this dimension using integer values.");
+    }
 
 #ifdef DEBUG
     std::cout << "[rank" << rank
@@ -180,7 +184,7 @@ data_type *KDTreeGreenhouse::finalize() {
   data_type *right_branch_buffer = nullptr;
 
   data_type *left_branch_buffer = nullptr;
-  int left_branch_size = serial_tree_size;
+  size_t left_branch_size = serial_tree_size;
 
   if (serial_tree_size > 0) {
     left_branch_buffer = unpack_optional_array(serial_tree, serial_tree_size,
@@ -189,7 +193,7 @@ data_type *KDTreeGreenhouse::finalize() {
     data_type *temp_left_buffer =
         new data_type[serial_tree_size * n_components];
     rearrange_kd_tree(temp_left_buffer, left_branch_buffer, serial_tree_size,
-                       n_components);
+                      n_components);
     delete[] left_branch_buffer;
     left_branch_buffer = temp_left_buffer;
 #endif
@@ -212,17 +216,17 @@ data_type *KDTreeGreenhouse::finalize() {
              mpi_data_type, right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER,
              MPI_COMM_WORLD, &status);
 
-    int branch_size = left_branch_size;
+    size_t branch_size = left_branch_size;
     if (right_branch_size != left_branch_size) {
-      int max = std::max(right_branch_size, left_branch_size);
-      int min = std::min(right_branch_size, left_branch_size);
+      size_t max = std::max(right_branch_size, left_branch_size);
+      size_t min = std::min(right_branch_size, left_branch_size);
 
       data_type *old_buffer =
           min == left_branch_size ? left_branch_buffer : right_branch_buffer;
 
       data_type *temp = new data_type[max * n_components];
       std::memcpy(temp, old_buffer, min * n_components * sizeof(data_type));
-      for (int i = min * n_components; i < max * n_components; ++i) {
+      for (size_t i = min * n_components; i < max * n_components; ++i) {
         temp[i] = EMPTY_PLACEHOLDER;
       }
 

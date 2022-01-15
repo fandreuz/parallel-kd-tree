@@ -33,7 +33,7 @@
  * @return data_type* A 1D array whose size is `size*dims`, where `dims`
  *                      consecutive items represent a data point.
  */
-data_type *read_file(const std::string &filename, int *size, int *dims);
+data_type *read_file(const std::string &filename, std::size_t *size, int *dims);
 
 /**
  * @brief Write a k-d tree to a CSV file.

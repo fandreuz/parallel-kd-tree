@@ -9,13 +9,14 @@
     When there are no more rows, we copy the content of the vector on a 1D
     array (via std::memcpy) and return that 1D array to the user.
  */
-data_type *read_file(const std::string &filename, int *size, int *dims) {
+data_type *read_file(const std::string &filename, std::size_t *size,
+                     int *dims) {
   std::ifstream file(filename);
 
   // local variable which holds the last known number of dimensions per data
   // point. used to check that all data points have the same number of
   // components
-  std::optional<std::size_t> last_known_dims = std::nullopt;
+  std::optional<std::std::size_t> last_known_dims = std::nullopt;
 
   constexpr char separator = ',';
 
@@ -26,7 +27,7 @@ data_type *read_file(const std::string &filename, int *size, int *dims) {
       std::vector<data_type> row_buffer;
 
       int start = 0;
-      for (std::size_t i = 1; i < line.length(); ++i) {
+      for (std::std::size_t i = 1; i < line.length(); ++i) {
         // we found a component
         if (line[i] == separator) {
           row_buffer.push_back(string_converter(line.substr(start, i)));
@@ -43,7 +44,7 @@ data_type *read_file(const std::string &filename, int *size, int *dims) {
       last_known_dims.emplace(row_buffer.size());
 
       // we put evertthing into line_buffer
-      for (std::size_t i = 0; i < *last_known_dims; ++i)
+      for (std::std::size_t i = 0; i < *last_known_dims; ++i)
         lines_buffer.push_back(row_buffer[i]);
     }
     file.close();
