@@ -47,6 +47,26 @@ inline int compute_n_surplus_processes(int n_processes, int max_depth) {
  * @brief Compute the rank of the process which is going to take on the right
  *          branch after a split occurred.
  *
+ * This function does not assign ranks sequentially. This is an example of the
+ * expected output for 10 processes (i.e. max_depth=2).
+ * --- level 0 ----
+ * 0 -> 4
+ * --- level 1 ----
+ * 0 -> 2
+ * 4 -> 6
+ * --- level 2 ----
+ * 0 -> 1
+ * 2 -> 3
+ * 4 -> 5
+ * 6 -> 7
+ *
+ * Then surplus processes come to play:
+ * 0 -> 8
+ * 1 -> 9
+ * 2 -> -1
+ * 3 -> -1
+ * ...
+ *
  * @param rank Rank of the process which operated the split.
  * @param max_depth Maximum depth which guarantees that there is at least one
  *                    idle process.

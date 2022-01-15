@@ -11,7 +11,7 @@ data_type *KDTreeGreenhouse::retrieve_dataset_info() {
   // the depth of the tree at this point
   int br_size_depth_parent[4];
   MPI_Recv(&br_size_depth_parent, 4, MPI_INT, MPI_ANY_SOURCE,
-           TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD, &status);
+           TAG_RIGHT_PROCESS_START_INFO, MPI_COMM_WORLD, &status);
 
   // number of data points in the branch
   n_datapoints = br_size_depth_parent[0];
@@ -21,10 +21,13 @@ data_type *KDTreeGreenhouse::retrieve_dataset_info() {
   parent = br_size_depth_parent[2];
   n_components = br_size_depth_parent[3];
 
-  data_type *data = new data_type[n_datapoints * n_components];
-  // receive the data in the branch assigned to this process
-  MPI_Recv(data, n_datapoints * n_components, mpi_data_type, MPI_ANY_SOURCE,
-           MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+  data_type *data = nullptr;
+  if (n_datapoints > 0) {
+    data = new data_type[n_datapoints * n_components];
+    // receive the data in the branch assigned to this process
+    MPI_Recv(data, n_datapoints * n_components, mpi_data_type, MPI_ANY_SOURCE,
+             TAG_RIGHT_PROCESS_START_DATA, MPI_COMM_WORLD, &status);
+  }
 
 #ifdef DEBUG
   std::cout << "[rank" << rank << "]: waked by rank" << parent << std::endl;
@@ -68,18 +71,10 @@ void KDTreeGreenhouse::build_tree_parallel(
 #endif
 
   int next_depth = depth + 1;
+  int right_process_rank = compute_next_process_rank(
+      rank, max_depth, next_depth, surplus_processes, n_parallel_workers);
 
-  if (n_datapoints <= 1 || next_depth > max_depth + 1 ||
-      (next_depth == max_depth + 1 && rank >= surplus_processes)) {
-#ifdef DEBUG
-    if (n_datapoints <= 1)
-      std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
-    else {
-      std::cout << "[rank" << rank
-                << "]: no available processes, going serial from now "
-                << std::endl;
-    }
-#endif
+  if (right_process_rank == -1) {
     if (n_datapoints > 0) {
       // we want that the serial branch is storable in an array whose size is
       // a powersum of two
@@ -100,37 +95,27 @@ void KDTreeGreenhouse::build_tree_parallel(
                         starting_region_width, 0, 0);
     }
 
-    // this process should have called a surplus process to do some stuff, but
-    // since we have only one or less items in the buffer we could not call
-    // anyone. however we need to wake that process to avoid deadlock
-    if (n_datapoints <= 1 && next_depth == max_depth + 1 &&
-        rank < surplus_processes) {
-      int right_process_rank = n_parallel_workers - surplus_processes + rank;
-
-      int right_branch_data[4];
-      right_branch_data[0] = 0;
-      MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank,
-               TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD);
-    }
+    // otherwise there's nothing to do
   } else {
     int dimension = select_splitting_dimension(depth, n_components);
-    array_size split_point_idx =
-        sort_and_split(first_data_point, end_data_point, dimension);
+    array_size split_point_idx = 0;
+    array_size right_branch_size = 0;
+    if (n_datapoints > 0) {
+      split_point_idx =
+          sort_and_split(first_data_point, end_data_point, dimension);
+      parallel_splits.push_back(
+          std::move(*(first_data_point + split_point_idx)));
+      right_branch_size = n_datapoints - split_point_idx - 1;
 
+      // even if we did not send anything to the right process, we still need
+      // to store that process in children because otherwise we cannot recover
+      // the corresponding datapoint from parallel_splits.
+      children.push_back(right_branch_size > 0 ? right_process_rank : -1);
 #ifdef DEBUG
-    std::cout << "[rank" << rank << "]: parallel split against axis "
-              << dimension << ", split_idx = " << split_point_idx << std::endl;
+      std::cout << "[rank" << rank << "]: parallel split against axis "
+                << dimension << ", split_idx = " << split_point_idx
+                << std::endl;
 #endif
-
-    parallel_splits.push_back(std::move(*(first_data_point + split_point_idx)));
-
-    int right_process_rank = compute_next_process_rank(
-        rank, max_depth, next_depth, surplus_processes, n_parallel_workers);
-    array_size right_branch_size = n_datapoints - split_point_idx - 1;
-
-    if (n_datapoints - split_point_idx - 1 != right_branch_size) {
-      throw std::invalid_argument(
-          "Cannot deal with this dimension using integer values.");
     }
 
 #ifdef DEBUG
@@ -139,35 +124,43 @@ void KDTreeGreenhouse::build_tree_parallel(
               << split_point_idx + 1 << " (size " << right_branch_size << " of "
               << n_datapoints << ") to rank" << right_process_rank << std::endl;
 #endif
+    MPI_Request info_request;
 
     int right_branch_data[4];
     right_branch_data[0] = right_branch_size;
     right_branch_data[1] = next_depth;
     right_branch_data[2] = rank;
     right_branch_data[3] = n_components;
-    MPI_Send(right_branch_data, 4, MPI_INT, right_process_rank,
-             TAG_RIGHT_PROCESS_START, MPI_COMM_WORLD);
+    MPI_Isend(right_branch_data, 4, MPI_INT, right_process_rank,
+              TAG_RIGHT_PROCESS_START_INFO, MPI_COMM_WORLD, &info_request);
 
     std::vector<DataPoint>::iterator right_branch_first_point =
         first_data_point + split_point_idx + 1;
-    data_type *right_branch =
-        unpack_array(right_branch_first_point, end_data_point, n_components);
 
-    // we delegate the right part to another process
-    // this is synchronous since we also want to delete the buffer ASAP
-    MPI_Send(right_branch, right_branch_size * n_components, mpi_data_type,
-             right_process_rank, 0, MPI_COMM_WORLD);
-    delete[] right_branch;
+    if (right_branch_size > 0) {
+      // before overwriting the right branch pool we wait to see if the last
+      // comunication is completed. otherwise we may corrupt the buffer
+      MPI_Wait(&right_branch_send_data_request, MPI_STATUS_IGNORE);
+      // we unpack the right branch into the right pool
+      unpack_array(right_branch_memory_pool, right_branch_first_point,
+                   end_data_point, n_components);
+
+      // we delegate the right part to another process
+      // this is synchronous since we also want to delete the buffer ASAP
+      MPI_Isend(right_branch_memory_pool, right_branch_size * n_components,
+                mpi_data_type, right_process_rank, TAG_RIGHT_PROCESS_START_DATA,
+                MPI_COMM_WORLD, &right_branch_send_data_request);
+    }
 
     n_datapoints = split_point_idx;
 
-    children.push_back(right_process_rank);
+    // this process takes care of the left part
+    build_tree_parallel(first_data_point, right_branch_first_point - 1,
+                        next_depth);
 
-    if (split_point_idx != 0) {
-      // this process takes care of the left part
-      build_tree_parallel(first_data_point, right_branch_first_point - 1,
-                          next_depth);
-    }
+    // the buffer will be destroyed when the stack is destroyed, therefore we
+    // wait the end of the asynchronous operation
+    MPI_Wait(&info_request, MPI_STATUS_IGNORE);
   }
 }
 
@@ -211,6 +204,7 @@ data_type *KDTreeGreenhouse::finalize() {
     MPI_Recv(&right_branch_size, 1, MPI_INT, right_rank,
              TAG_RIGHT_PROCESS_N_ITEMS, MPI_COMM_WORLD, &status);
 
+    // TODO: this can be optimized
     right_branch_buffer = new data_type[right_branch_size * n_components];
 
     // we gather the branch from another process
@@ -263,6 +257,8 @@ data_type *KDTreeGreenhouse::finalize() {
     // the new size of the left branch is the sum of the former left branch size
     // and of the right branch size, plus 1 (the split point)
     left_branch_size = branch_size * 2 + 1;
+
+    right_branch_size = 0;
   }
 
   if (parent != -1) {
@@ -276,6 +272,7 @@ data_type *KDTreeGreenhouse::finalize() {
     MPI_Send(left_branch_buffer, left_branch_size * n_components, mpi_data_type,
              parent, TAG_RIGHT_PROCESS_PROCESSING_OVER, MPI_COMM_WORLD);
   }
+
   grown_kdtree_size = left_branch_size;
   return left_branch_buffer;
 }

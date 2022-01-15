@@ -36,13 +36,18 @@ data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
                         int n_components) {
   data_type *unpacked =
       new data_type[std::distance(first_point, last_point) * n_components];
+  unpack_array(unpacked, first_point, last_point, n_components);
+  return unpacked;
+}
 
+void unpack_array(data_type *dest, std::vector<DataPoint>::iterator first_point,
+                  std::vector<DataPoint>::iterator last_point,
+                  int n_components) {
   int offset = 0;
   for (auto i = first_point; i != last_point; ++i) {
-    (*i).copy_to_array(unpacked + offset, n_components);
+    (*i).copy_to_array(dest + offset, n_components);
     offset += n_components;
   }
-  return unpacked;
 }
 
 // unpack an array which may contain uninitialized items

@@ -69,6 +69,20 @@ data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
                         int n_components);
 
 /**
+ * @brief Transform the given sequence of data points in a 1D array such that
+ *          `n_components` contiguous items constitute a data point.
+ *
+ * @param dest The array in which the unpacked elements will be placed.
+ * @param first_point Iterator pointing to the first item of the sequence.
+ * @param last_point Iterator pointing past the last item of the sequence.
+ * @param n_components  Number of components for each data point.
+ * @return data_type* A 1D array of size `size*n_components`.
+ */
+void unpack_array(data_type *dest, std::vector<DataPoint>::iterator first_point,
+                  std::vector<DataPoint>::iterator last_point,
+                  int n_components);
+
+/**
  * @brief Transform the given array (which may contain uninitialized values)
  *          of data points in a 1D array such that `n_components` contiguous
  * items constitute a data point.
@@ -204,6 +218,9 @@ array_size sort_and_split(std::vector<DataPoint>::iterator first_data_point,
 inline std::vector<DataPoint>
 as_data_points(data_type *data, array_size n_datapoints, int n_components) {
   std::vector<DataPoint> data_points;
+  if (data == nullptr)
+    return data_points;
+
   data_points.reserve(n_datapoints);
   for (array_size i = 0; i < n_datapoints; i++) {
     data_points.push_back(DataPoint(data + i * n_components));

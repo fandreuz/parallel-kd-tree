@@ -118,6 +118,9 @@ public:
     other.dims = -1;
   }
 
+  KNode()
+      : data{nullptr}, dims{0}, left{nullptr}, right{nullptr}, is_root{false} {}
+
   /**
    * @brief Destroy the KNode object, and also the dataset if `is_root` is
    *         `true`.

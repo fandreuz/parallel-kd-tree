@@ -4,6 +4,12 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
                                    int n_components)
     : n_datapoints{n_datapoints}, n_components{n_components} {
   bool should_delete_data = false;
+
+// we are not interested in the rank for OpenMP
+#ifdef USE_MPI
+  rank = get_rank();
+#endif
+
   if (data == nullptr) {
 #ifdef USE_MPI
     should_delete_data = true;
@@ -16,8 +22,14 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
   // 1D representation of our KDTree, or nullptr (if not main process)
   data_type *tree = grow_kd_tree(
       as_data_points(data, this->n_datapoints, this->n_components));
-  grown_kd_tree =
-      convert_to_knodes(tree, grown_kdtree_size, this->n_components, 0, 1, 0);
+
+  // tree is nullptr if the branch assigned to this process (in MPI) was empty
+  if (tree != nullptr)
+    grown_kd_tree =
+        convert_to_knodes(tree, grown_kdtree_size, this->n_components, 0, 1, 0);
+  else {
+    grown_kd_tree = new KNode<data_type>();
+  }
 
   if (should_delete_data)
     delete[] data;
@@ -32,11 +44,19 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
       max_depth = compute_max_depth(n_parallel_workers);
       surplus_processes =
           compute_n_surplus_processes(n_parallel_workers, max_depth);
-      rank = get_rank();
 
 #ifdef USE_MPI
+      // we initialize the pool using the biggest possible number of components
+      // we will ever need for this branch.
+      right_branch_memory_pool = new data_type[n_datapoints / 2 * n_components];
+
       build_tree_parallel(data_points.begin(), data_points.end(),
                           starting_depth);
+
+      // before deleting the pool, we wait the last communication to be
+      // completed
+      MPI_Wait(&right_branch_send_data_request, MPI_STATUS_IGNORE);
+      delete[] right_branch_memory_pool;
 #else
       // we want to store the tree (in a temporary way) in an array whose size
       // is a powersum of two
@@ -56,7 +76,10 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
     }
   }
 
-  return finalize();
+  if (!data_points.empty())
+    return finalize();
+  else
+    return nullptr;
 }
 
 /*
@@ -101,9 +124,6 @@ void KDTreeGreenhouse::build_tree_serial(
   // this is equivalent to say that there is at most one data point in the
   // sequence
   if (first_data_point + 1 == end_data_point) {
-#ifdef DEBUG
-    std::cout << "[rank" << rank << "]: hit the bottom! " << std::endl;
-#endif
     // if we encounter the flag ALTERNATIVE_SERIAL_WRITE the parameter
     // branch_starting_index will always be zero, therefore it does not
     // interphere with this writing.
@@ -113,13 +133,6 @@ void KDTreeGreenhouse::build_tree_serial(
     int dimension = select_splitting_dimension(depth, n_components);
     array_size split_point_idx =
         sort_and_split(first_data_point, end_data_point, dimension);
-
-#ifdef DEBUG
-    std::cout << "[rank" << rank << "]: serial split against axis " << dimension
-              << ", split_idx = " << split_point_idx
-              << ", size = " << std::distance(first_data_point, end_data_point)
-              << std::endl;
-#endif
 
     serial_tree[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*(first_data_point + split_point_idx))));
@@ -157,7 +170,7 @@ void KDTreeGreenhouse::build_tree_serial(
 #ifndef USE_MPI
     bool no_spawn_more_threads =
         depth > max_depth + 1 ||
-        (depth == max_depth + 1 && rank >= surplus_processes);
+        (depth == max_depth + 1 && get_rank() >= surplus_processes);
 #endif
 
     std::vector<DataPoint>::iterator right_branch_first_point =

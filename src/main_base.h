@@ -70,6 +70,12 @@ inline void init_parallel_environment(int *argc, char ***argv) {
 
 inline void finalize_parallel_environment() {
 #ifdef USE_MPI
+#ifdef DEBUG
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  std::cout << "[rank" << rank << "] finalizing" << std::endl;
+#endif
+
   MPI_Finalize();
 #endif
 }

@@ -33,13 +33,24 @@
 #define TAG_RIGHT_PROCESS_N_ITEMS 11
 /**
  * @def
- * @brief Communicate to a child process the data points in the branch it is
- *          assigned to. Attached to this communication there should be some
- *          info regarding the branch (number of data points, depth of the tree
- *          at this point, rank of the parent, number of components in the
- *          data points).
+ * @brief Communicate to a child process the data points some info regarding the
+ *        branch it is assigned to.
+ *
+ * Attached to this communication there should be some info regarding the branch
+ * (number of data points, depth  of the tree at this point, rank of the parent,
+ * number of components in the data points).
  */
-#define TAG_RIGHT_PROCESS_START 12
+#define TAG_RIGHT_PROCESS_START_INFO 12
+/**
+ * @def
+ * @brief Communicate to a child process the data points in the branch it is
+ *          assigned to.
+ *
+ * Attached to this communication there should be an array containing the
+ * data points assigned to this process (n_components consecutive values are
+ * considered a data point).
+ */
+#define TAG_RIGHT_PROCESS_START_DATA 13
 
 class KDTreeGreenhouse {
 private:
@@ -50,8 +61,13 @@ private:
   // child process are to be used in further parallel splittings
   int starting_depth = 0;
 
+#ifdef USE_MPI
   // rank of this process
   int rank = -1;
+
+  // an MPI_Communicator which does not hold the main process.
+  MPI_Comm no_main_communicator;
+#endif
 
   // number of MPI processes available
   int n_parallel_workers = -1;
@@ -85,9 +101,17 @@ private:
   // children of this process, i.e. processes that received a right branch from
   // this process
   std::vector<int> children;
+
+  // a pool of ready-to-use memory which can be used as a buffer to store
+  // temporary the content of the right branch before sending it to the
+  // appropriate process
+  data_type* right_branch_memory_pool = nullptr;
+  // an MPI request which monitors the operation of sending data to the right
+  // branch
+  MPI_Request right_branch_send_data_request = MPI_REQUEST_NULL;
 #endif
 
-  array_size grown_kdtree_size;
+  array_size grown_kdtree_size = 0;
   KNode<data_type> *grown_kd_tree = nullptr;
 
   data_type *grow_kd_tree(std::vector<DataPoint> data_points);
