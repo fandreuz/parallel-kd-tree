@@ -27,7 +27,7 @@
  *     bigger_powersum_of_two(5) = 7 = 1 + 2 + 4
  *     bigger_powersum_of_two(3) = 3 = 1 + 2
  */
-int bigger_powersum_of_two(size_t n);
+int bigger_powersum_of_two(array_size n);
 
 /**
  * @brief Return the biggest number N such that N <= n and N is a sum of powers
@@ -40,7 +40,7 @@ int bigger_powersum_of_two(size_t n);
  *     smaler_powersum_of_two(5) = 3 = 1 + 2
  *     smaller_powersum_of_two(7) = 7 = 1 + 2 + 4
  */
-int smaller_powersum_of_two(size_t n);
+int smaller_powersum_of_two(array_size n);
 
 /**
  * @brief Transform the given array of data points in a 1D array such that
@@ -52,7 +52,7 @@ int smaller_powersum_of_two(size_t n);
  * @param n_components  Number of components for each data point.
  * @return data_type* A 1D array of size `size*n_components`.
  */
-data_type *unpack_array(DataPoint *array, size_t n_datapoints,
+data_type *unpack_array(DataPoint *array, array_size n_datapoints,
                         int n_components);
 
 /**
@@ -90,11 +90,11 @@ data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
  *                      `array` has been initialized.
  * @return data_type* A 1D array of size `size*n_components`.
  */
-data_type *unpack_risky_array(DataPoint *array, size_t n_datapoints,
+data_type *unpack_risky_array(DataPoint *array, array_size n_datapoints,
                               int n_components, bool *initialized);
 
 data_type *unpack_optional_array(std::optional<DataPoint> *array,
-                                 size_t n_datapoints, int n_components,
+                                 array_size n_datapoints, int n_components,
                                  data_type fallback_value);
 
 /**
@@ -118,7 +118,7 @@ data_type *unpack_optional_array(std::optional<DataPoint> *array,
  * @param n_components    Number of dimensions for each data point.
  */
 void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
-                    size_t branches_size, int n_components);
+                    array_size branches_size, int n_components);
 
 #ifdef ALTERNATIVE_SERIAL_WRITE
 /**
@@ -132,8 +132,8 @@ void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
  *                        dimensions).
  * @param n_components    Number of dimensions for each data point.
  */
-void rearrange_kd_tree(data_type *dest, data_type *src, size_t n_datapoints,
-                       int n_components);
+void rearrange_kd_tree(data_type *dest, data_type *src, int max_depth,
+                       array_size n_datapoints, int n_components);
 #endif
 
 /**
@@ -151,9 +151,11 @@ void rearrange_kd_tree(data_type *dest, data_type *src, size_t n_datapoints,
  *                      located the root node of the subtree represented by this
  *                      recursive call.
  */
-KNode<data_type> *convert_to_knodes(data_type *tree, size_t n_datapoints,
-                                    int n_components, int current_level_start,
-                                    int current_level_nodes, int start_offset);
+KNode<data_type> *convert_to_knodes(data_type *tree, array_size n_datapoints,
+                                    int n_components,
+                                    array_size current_level_start,
+                                    array_size current_level_nodes,
+                                    array_size start_offset);
 
 /**
  * @brief Select an axis to be used for splitting a branch of the tree.
@@ -174,7 +176,7 @@ inline int select_splitting_dimension(int depth, int n_components) {
  * @param n_datapoints Number of items in array.
  * @param axis Axis along which the sorting must be done.
 */
-size_t sort_and_split(DataPoint *array, size_t n_datapoints, int axis);
+array_size sort_and_split(DataPoint *array, array_size n_datapoints, int axis);
 
 /**
  * Sort the given vector such that the element in the middle is exactly the
@@ -187,9 +189,9 @@ size_t sort_and_split(DataPoint *array, size_t n_datapoints, int axis);
  *                         sequence to be sorted.
  * @param axis Axis along which the sorting must be done.
  */
-size_t sort_and_split(std::vector<DataPoint>::iterator first_data_point,
-                      std::vector<DataPoint>::iterator end_data_point,
-                      int axis);
+array_size sort_and_split(std::vector<DataPoint>::iterator first_data_point,
+                          std::vector<DataPoint>::iterator end_data_point,
+                          int axis);
 
 /**
  * @brief Return the given array of values as a vector of `DataPoints`.
@@ -200,10 +202,10 @@ size_t sort_and_split(std::vector<DataPoint>::iterator first_data_point,
  * @return std::vector<DataPoint>
  */
 inline std::vector<DataPoint>
-as_data_points(data_type *data, size_t n_datapoints, int n_components) {
+as_data_points(data_type *data, array_size n_datapoints, int n_components) {
   std::vector<DataPoint> data_points;
   data_points.reserve(n_datapoints);
-  for (int i = 0; i < n_datapoints; i++) {
+  for (array_size i = 0; i < n_datapoints; i++) {
     data_points.push_back(DataPoint(data + i * n_components));
   }
   return data_points;

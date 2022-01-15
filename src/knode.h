@@ -51,9 +51,9 @@
 #endif
 
 #ifdef BIG
-using size_t = std::size_t;
+using array_size = std::size_t;
 #else
-using size_t = int;
+using array_size = int;
 #endif
 
 /**

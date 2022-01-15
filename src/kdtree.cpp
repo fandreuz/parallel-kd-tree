@@ -1,6 +1,6 @@
 #include "kdtree.h"
 
-KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, size_t n_datapoints,
+KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
                                    int n_components)
     : n_datapoints{n_datapoints}, n_components{n_components} {
   bool should_delete_data = false;
@@ -82,8 +82,8 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
 void KDTreeGreenhouse::build_tree_serial(
     std::vector<DataPoint>::iterator first_data_point,
     std::vector<DataPoint>::iterator end_data_point, int depth,
-    size_t region_width, size_t region_start_index,
-    size_t branch_starting_index) {
+    array_size region_width, array_size region_start_index,
+    array_size branch_starting_index) {
   // we update the maximum (serial) depth reached
 #pragma omp master
   {
@@ -95,7 +95,7 @@ void KDTreeGreenhouse::build_tree_serial(
 #endif
 
     int serial_depth = depth - parallel_depth;
-    max_serial_depth = std::max(max_serial_depth, depth);
+    max_serial_depth = std::max(max_serial_depth, serial_depth);
   }
 
   // this is equivalent to say that there is at most one data point in the
@@ -111,7 +111,7 @@ void KDTreeGreenhouse::build_tree_serial(
         DataPoint(std::move(*first_data_point)));
   } else {
     int dimension = select_splitting_dimension(depth, n_components);
-    size_t split_point_idx =
+    array_size split_point_idx =
         sort_and_split(first_data_point, end_data_point, dimension);
 
 #ifdef DEBUG
@@ -124,8 +124,8 @@ void KDTreeGreenhouse::build_tree_serial(
     serial_tree[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*(first_data_point + split_point_idx))));
 
-    size_t region_start_index_left, region_start_index_right;
-    size_t branch_start_index_left, branch_start_index_right;
+    array_size region_start_index_left, region_start_index_right;
+    array_size branch_start_index_left, branch_start_index_right;
 
     // we update the values for the next iteration
 #ifdef ALTERNATIVE_SERIAL_WRITE

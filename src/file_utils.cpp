@@ -16,7 +16,7 @@ data_type *read_file(const std::string &filename, std::size_t *size,
   // local variable which holds the last known number of dimensions per data
   // point. used to check that all data points have the same number of
   // components
-  std::optional<std::std::size_t> last_known_dims = std::nullopt;
+  std::optional<std::size_t> last_known_dims = std::nullopt;
 
   constexpr char separator = ',';
 
@@ -27,7 +27,7 @@ data_type *read_file(const std::string &filename, std::size_t *size,
       std::vector<data_type> row_buffer;
 
       int start = 0;
-      for (std::std::size_t i = 1; i < line.length(); ++i) {
+      for (std::size_t i = 1; i < line.length(); ++i) {
         // we found a component
         if (line[i] == separator) {
           row_buffer.push_back(string_converter(line.substr(start, i)));
@@ -44,7 +44,7 @@ data_type *read_file(const std::string &filename, std::size_t *size,
       last_known_dims.emplace(row_buffer.size());
 
       // we put evertthing into line_buffer
-      for (std::std::size_t i = 0; i < *last_known_dims; ++i)
+      for (std::size_t i = 0; i < *last_known_dims; ++i)
         lines_buffer.push_back(row_buffer[i]);
     }
     file.close();
@@ -53,7 +53,7 @@ data_type *read_file(const std::string &filename, std::size_t *size,
   }
 
   // we return the number of data points and their dimensionality
-  int loc_size = lines_buffer.size() / *last_known_dims;
+  std::size_t loc_size = lines_buffer.size() / *last_known_dims;
   *size = loc_size;
   int loc_dims = (int)*last_known_dims;
   *dims = loc_dims;

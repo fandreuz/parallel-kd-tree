@@ -21,9 +21,9 @@ public:
  * @brief Compare numerically two data points along the specified axis.
  */
 struct DataPointCompare {
-  inline DataPointCompare(size_t index) : index_(index) {}
+  inline DataPointCompare(array_size index) : index_(index) {}
   inline bool operator()(const DataPoint &dp1, const DataPoint &dp2) const {
     return dp1[index_] < dp2[index_];
   }
-  size_t index_;
+  array_size index_;
 };

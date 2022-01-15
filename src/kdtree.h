@@ -43,7 +43,7 @@
 
 class KDTreeGreenhouse {
 private:
-  size_t n_datapoints;
+  array_size n_datapoints;
   int n_components;
 
   // the depth which this k-d tree starts from, used to determine which
@@ -66,7 +66,7 @@ private:
   int surplus_processes = 0;
 
   // number of items assigned serially (i.e. non-parallelizable) to this process
-  size_t serial_tree_size = 0;
+  array_size serial_tree_size = 0;
   // maximum depth of the serial sub-tree.
   int max_serial_depth = 0;
 
@@ -87,7 +87,7 @@ private:
   std::vector<int> children;
 #endif
 
-  size_t grown_kdtree_size;
+  array_size grown_kdtree_size;
   KNode<data_type> *grown_kd_tree = nullptr;
 
   data_type *grow_kd_tree(std::vector<DataPoint> data_points);
@@ -101,17 +101,17 @@ private:
 
   void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
                          std::vector<DataPoint>::iterator end_data_point,
-                         int depth, size_t region_width,
-                         size_t region_start_index,
-                         size_t branch_starting_index);
+                         int depth, array_size region_width,
+                         array_size region_start_index,
+                         array_size branch_starting_index);
   data_type *finalize();
 
 public:
-  KDTreeGreenhouse(data_type *data, size_t n_datapoints, int n_components);
+  KDTreeGreenhouse(data_type *data, array_size n_datapoints, int n_components);
   ~KDTreeGreenhouse() { delete grown_kd_tree; }
 
   KNode<data_type> &&extract_grown_kdtree() {
     return std::move(*grown_kd_tree);
   }
-  size_t get_grown_kdtree_size() { return grown_kdtree_size; }
+  array_size get_grown_kdtree_size() { return grown_kdtree_size; }
 };
