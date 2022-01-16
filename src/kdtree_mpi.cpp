@@ -218,6 +218,9 @@ data_type *KDTreeGreenhouse::finalize() {
   for (int i = n_children - 1; i >= 0; --i) {
     right_rank = children.at(i);
 
+    // if right_rank is -1 we are assuming that the right branch given to the
+    // child project was a "placeholder", therefore we do not need to contact
+    // the child.
     if (right_rank != -1) {
       MPI_Recv(&right_branch_size, 1, MPI_INT, right_rank,
                TAG_RIGHT_PROCESS_N_ITEMS, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -258,7 +261,7 @@ data_type *KDTreeGreenhouse::finalize() {
       }
     }
 
-    DataPoint split_item = std::move(parallel_splits.at(i));
+    DataPoint split_item = std::move(parallel_splits[i]);
 
     merging_array = new data_type[(branch_size * 2 + 1) * n_components];
 
