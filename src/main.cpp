@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 #ifdef STORE_TO_FILE
   std::string out_filename;
   if (argc > 2)
-    write_file(argv[2], tree, n_dims);
+    write_file_serial(argv[2], &tree, n_dims);
   else
     log_message("Path to output file not found.");
 #else
