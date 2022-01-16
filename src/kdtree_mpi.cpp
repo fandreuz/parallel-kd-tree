@@ -76,6 +76,12 @@ void KDTreeGreenhouse::build_tree_parallel(
 
   if (right_process_rank == -1) {
     if (n_datapoints > 0) {
+#ifdef DEBUG
+      std::cout << "[rank" << rank
+                << "]: no available processes, going serial from now "
+                << std::endl;
+#endif
+
       // we want that the serial branch is storable in an array whose size is
       // a powersum of two
       serial_tree_size = bigger_powersum_of_two(n_datapoints);
@@ -93,9 +99,13 @@ void KDTreeGreenhouse::build_tree_parallel(
 
       build_tree_serial(first_data_point, end_data_point, depth,
                         starting_region_width, 0, 0);
+    } else {
+#ifdef DEBUG
+      std::cout << "[rank" << rank << "]: build_tree_parallel is dead now "
+                << std::endl;
+#endif
+      // otherwise there's nothing to do
     }
-
-    // otherwise there's nothing to do
   } else {
     int dimension = select_splitting_dimension(depth, n_components);
     array_size split_point_idx = 0;
@@ -111,10 +121,18 @@ void KDTreeGreenhouse::build_tree_parallel(
       // to store that process in children because otherwise we cannot recover
       // the corresponding datapoint from parallel_splits.
       children.push_back(right_branch_size > 0 ? right_process_rank : -1);
+
 #ifdef DEBUG
       std::cout << "[rank" << rank << "]: parallel split against axis "
                 << dimension << ", split_idx = " << split_point_idx
-                << std::endl;
+                << ", rank of the expected children is "
+                << children[children.size() - 1] << std::endl;
+#endif
+    } else {
+#ifdef DEBUG
+      std::cout << "[rank" << rank
+                << "]: simulating a parallel split to wake rank"
+                << right_process_rank << std::endl;
 #endif
     }
 
@@ -200,17 +218,20 @@ data_type *KDTreeGreenhouse::finalize() {
   for (int i = n_children - 1; i >= 0; --i) {
     right_rank = children.at(i);
 
-    MPI_Status status;
-    MPI_Recv(&right_branch_size, 1, MPI_INT, right_rank,
-             TAG_RIGHT_PROCESS_N_ITEMS, MPI_COMM_WORLD, &status);
+    if (right_rank != -1) {
+      MPI_Recv(&right_branch_size, 1, MPI_INT, right_rank,
+               TAG_RIGHT_PROCESS_N_ITEMS, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
 
     // TODO: this can be optimized
     right_branch_buffer = new data_type[right_branch_size * n_components];
 
-    // we gather the branch from another process
-    MPI_Recv(right_branch_buffer, right_branch_size * n_components,
-             mpi_data_type, right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER,
-             MPI_COMM_WORLD, &status);
+    if (right_rank != -1) {
+      // we gather the branch from another process
+      MPI_Recv(right_branch_buffer, right_branch_size * n_components,
+               mpi_data_type, right_rank, TAG_RIGHT_PROCESS_PROCESSING_OVER,
+               MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
 
     array_size branch_size = left_branch_size;
     if (right_branch_size != left_branch_size) {
