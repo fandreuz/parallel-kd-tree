@@ -47,5 +47,12 @@ int main(int argc, char **argv) {
                 "with `make file`.");
 #endif
 
+#ifdef TEST
+  if (test(&tree, n_dims))
+    log_message("!!! OK !!!");
+  else
+    log_message("!!! NO !!!");
+#endif
+
   finalize_parallel_environment();
 }

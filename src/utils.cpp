@@ -241,3 +241,82 @@ array_size sort_and_split(std::vector<DataPoint>::iterator first_data_point,
   // since it will be placed into the first empty spot in serial_split
   return median_idx;
 }
+
+#ifdef TEST
+bool test_kd_tree(KNode<data_type> *root,
+                  std::vector<std::optional<data_type>> *constraints,
+                  int depth) {
+  int n_components = constraints->size() / 2;
+
+  std::vector<std::optional<data_type>> *left_constraints =
+      new std::vector<std::optional<data_type>>(n_components * 2);
+  std::vector<std::optional<data_type>> *right_constraints =
+      new std::vector<std::optional<data_type>>(n_components * 2);
+
+  bool is_empty_node = true;
+  for (int dim = 0; dim < n_components; ++dim) {
+    if (root->get_data(dim) != EMPTY_PLACEHOLDER) {
+      is_empty_node = false;
+      break;
+    }
+  }
+
+  if (is_empty_node) {
+    if (root->get_left() == nullptr && root->get_right() == nullptr) {
+      return true;
+    } else {
+      std::cout << "Detected misplaced empty node. Depth=" << depth
+                << std::endl;
+      return false;
+    }
+  }
+
+  for (int dim = 0; dim < n_components; ++dim) {
+    data_type d = root->get_data(dim);
+
+    std::optional<data_type> low = constraints->at(dim * 2);
+    std::optional<data_type> high = constraints->at(dim * 2 + 1);
+
+    // the k-d tree violated the key condition
+    if ((low.has_value() && d < low) || (high.has_value() && d > high)) {
+      std::cout << "Detected violation along dimension " << dim << " in node";
+      print_node_values(std::cout, *root);
+
+      if (low.has_value() && d < low) {
+        std::cout << std::endl
+                  << "low = " << low.value() << ", node[" << dim << "] = " << d
+                  << std::endl;
+      } else {
+        std::cout << std::endl
+                  << "high = " << high.value() << ", node[" << dim
+                  << "] = " << d << std::endl;
+      }
+
+      return false;
+    }
+
+    std::optional<data_type> left_high(depth % n_components == dim ? d : high);
+    std::optional<data_type> right_low(depth % n_components == dim ? d : low);
+
+    (*left_constraints)[dim * 2] = low;
+    (*left_constraints)[dim * 2 + 1] = left_high;
+
+    (*right_constraints)[dim * 2] = right_low;
+    (*right_constraints)[dim * 2 + 1] = high;
+  }
+
+  // we delete this to earn some space
+  delete constraints;
+
+  bool left_is_kdtree =
+      root->get_left() == nullptr ||
+      test_kd_tree(root->get_left(), left_constraints, depth + 1);
+  // we want to break the chain as soon as possible
+  if (!left_is_kdtree)
+    return false;
+  bool right_is_kdtree =
+      root->get_right() == nullptr ||
+      test_kd_tree(root->get_right(), right_constraints, depth + 1);
+  return right_is_kdtree;
+}
+#endif

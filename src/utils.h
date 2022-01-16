@@ -2,6 +2,7 @@
 
 #include "data_point.h"
 #include "knode.h"
+#include "tree_printer.h"
 
 #include <algorithm>
 #include <cstring>
@@ -227,3 +228,17 @@ as_data_points(data_type *data, array_size n_datapoints, int n_components) {
   }
   return data_points;
 }
+
+#ifdef TEST
+/**
+ * @brief Test that the given k-d tree is built properly.
+ *
+ * @param root Root of the k-d tree.
+ * @param constraints Constraints on this k-d sub-tree given by parent nodes.
+ * @param depth Current depth of the k-d tree.
+ * @return bool
+ */
+bool test_kd_tree(KNode<data_type> *root,
+                  std::vector<std::optional<data_type>> *constraints,
+                  int depth);
+#endif

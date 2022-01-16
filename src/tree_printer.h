@@ -18,3 +18,12 @@ template class KNode<data_type>;
  * @return std::ostream& The output file descriptor.
  */
 std::ostream &operator<<(std::ostream &os, const KNode<data_type> &node);
+
+/**
+ * @brief Print the content of the given node.
+ *
+ * @param os   The output file descriptor.
+ * @param node The root of the k-d tree to be printed.
+ * @return std::ostream& The output file descriptor.
+ */
+std::ostream &print_node_values(std::ostream &os, const KNode<data_type> &node);
