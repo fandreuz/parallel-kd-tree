@@ -150,7 +150,8 @@ folder `results`, which has been generated using this library. This is very
 important, since using a CSV file which does not represent a k-d tree results
 in very bad-looking results.
 
-Navigate to the folder `visualization`, we visualize the tree for clarity:
+Navigate to the folder `visualization`, we visualize the directory tree for 
+clarity:
 
 ```
 └──kd-tree
