@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
 
 #ifdef TIME
   // output the time needed to build the k-d tree
-  log_message("# " + std::to_string(get_time() - start_time) + "\n");
+  log_message("# " + std::to_string(get_time() - start_time));
 #endif
 
   // we can now delete the data safely
