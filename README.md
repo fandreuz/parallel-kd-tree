@@ -224,5 +224,5 @@ There are some configurations available:
 
 ## References
 
-1. Friedman, Jerome H., Jon Louis Bentley, and Raphael Ari Finkel. ["An algorithm for finding best matches in logarithmic expected time."](https://homes.di.unimi.it/righini/Didattica/AlgoritmiEuristici/MaterialeAE/Friedman%20k-d%20trees.pdf) ACM Transactions on Mathematical Software (TOMS) 3.3 (1977): 209-226.
+1. Friedman et al. 1977, ["An algorithm for finding best matches in logarithmic expected time."](https://www.researchgate.net/profile/Raphael-Finkel/publication/220493118_An_Algorithm_for_Finding_Best_Matches_in_Logarithmic_Expected_Time/links/0912f50bf7e8351954000000/An-Algorithm-for-Finding-Best-Matches-in-Logarithmic-Expected-Time.pdf)
 2. [Wikipedia](https://en.wikipedia.org/wiki/K-d_tree)
