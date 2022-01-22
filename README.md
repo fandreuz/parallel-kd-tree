@@ -150,7 +150,7 @@ folder `results`, which has been generated using this library. This is very
 important, since using a CSV file which does not represent a k-d tree results
 in very bad-looking results.
 
-Navigate to the folder `visualization`, we visualize the directory tree for 
+Navigate to the folder `visualization`, we visualize the directory tree for
 clarity:
 
 ```
@@ -208,7 +208,8 @@ There are some configurations available:
   - [ ] Optimize the last call to `finalize()`: maybe it's not needed (since we traverse the tree in `utils.convert_to_knodes()`);
   - [x] Fix some memory leaks.
 - [x] Working OpenMP implementation;
-  - [ ] Fix _false sharing_. A possible way is to write things in a "bisectional" way, and then use `rearrange_branches`;
+  - [x] Fix _false sharing_.
+    - [ ] Check that the fix improves performance.
 - [ ] Testing;
 - [x] Visual representation of the tree;
 - [x] Catchy images in README;
