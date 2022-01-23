@@ -219,8 +219,10 @@ There are some configurations available:
 - [ ] Comparison against other implementations(?)
 
 ## Interesting points
-+ `right_branch_memory_pool` (see `kdtree.h`);
-+ Two different write modes (for *false sharing*).
++ `right_branch_memory_pool` in `kdtree.h` (we just re-use multiple time an
+  array allocated on the heap);
++ Two possible write modes for the serial generation of a k-d tree (mainly to
+  fix [*false sharing*](https://en.wikipedia.org/wiki/False_sharing)).
 
 ## References
 
