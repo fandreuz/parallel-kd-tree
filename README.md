@@ -213,8 +213,8 @@ There are some configurations available:
 - [ ] Testing;
 - [x] Visual representation of the tree;
 - [x] Catchy images in README;
-- [ ] Allow setting number of components per data point in compilation to improve performance;
 - [x] Put OpenMP and MPI implementations in the same file;
+- [ ] Mix OpenMP with MPI when the distribution of the branches with MPI is over;
 - [ ] Performance evaluation;
 - [ ] Comparison against other implementations(?)
 
