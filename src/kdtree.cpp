@@ -82,23 +82,22 @@ void KDTreeGreenhouse::start_omp_growth(mpi_parallelization_result mpi_result) {
   // since n_datapoints < powersum_of_two.
   pending_tree = new std::optional<DataPoint>[tree_size];
 
-  array_size starting_region_width;
-#ifdef ALTERNATIVE_SERIAL_WRITE
-  starting_region_width = tree_size;
-#else
-  starting_region_width = 1;
-#endif
-
-  std::vector<DataPoint>::iterator first_data_point = std::get<0>(mpi_result);
-  std::vector<DataPoint>::iterator end_data_point = std::get<1>(mpi_result);
-  int depth = std::get<2>(mpi_result);
-
-#pragma omp parallel if(n_datapoints > OPENMP_MIN_N) default(shared)
+#pragma omp parallel if (n_datapoints > OPENMP_MIN_N) default(none)            \
+    shared(pending_tree, n_components, max_omp_depth, surplus_omp_processes,   \
+           tree_size, mpi_result)
   {
 #pragma omp single
     {
-      build_tree_single_core(first_data_point, end_data_point, depth,
-                             starting_region_width, 0, 0);
+      array_size starting_region_width;
+#ifdef ALTERNATIVE_SERIAL_WRITE
+      starting_region_width = tree_size;
+#else
+      starting_region_width = 1;
+#endif
+
+      build_tree_single_core(std::get<0>(mpi_result), std::get<1>(mpi_result),
+                             std::get<2>(mpi_result), starting_region_width, 0,
+                             0);
     }
   }
 }

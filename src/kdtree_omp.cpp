@@ -82,7 +82,7 @@ void KDTreeGreenhouse::build_tree_single_core(
 
     std::vector<DataPoint>::iterator right_branch_first_point =
         first_data_point + split_point_idx + 1;
-#pragma omp task default(shared) final(no_spawn_more_threads)
+#pragma omp task final(no_spawn_more_threads)
     {
       // right
       build_tree_single_core(right_branch_first_point, end_data_point, depth,
