@@ -62,8 +62,8 @@ KDTreeGreenhouse::start_mpi_growth(std::vector<DataPoint> &data_points) {
   // we will ever need for this branch.
   right_branch_memory_pool = new data_type[n_datapoints / 2 * n_components];
   // start parallel construction of the kd-tree using MPI.
-  auto tp = build_tree_mpi(data_points.begin(), data_points.end(),
-                                starting_depth);
+  auto tp =
+      build_tree_mpi(data_points.begin(), data_points.end(), starting_depth);
 
   // before deleting the pool, we wait the last communication to be
   // completed
@@ -74,30 +74,29 @@ KDTreeGreenhouse::start_mpi_growth(std::vector<DataPoint> &data_points) {
 }
 
 void KDTreeGreenhouse::start_omp_growth(mpi_parallelization_result mpi_result) {
-#pragma omp parallel
+  // we want to store the tree (in a temporary way) in an array whose size
+  // is a powersum of two
+  tree_size = powersum_of_two(n_datapoints, true);
+  // some of them are NOT going to be initialized since they are
+  // placeholders of leafs (last level of the tree) that are not present
+  // since n_datapoints < powersum_of_two.
+  pending_tree = new std::optional<DataPoint>[tree_size];
+
+  array_size starting_region_width;
+#ifdef ALTERNATIVE_SERIAL_WRITE
+  starting_region_width = tree_size;
+#else
+  starting_region_width = 1;
+#endif
+
+  std::vector<DataPoint>::iterator first_data_point = std::get<0>(mpi_result);
+  std::vector<DataPoint>::iterator end_data_point = std::get<1>(mpi_result);
+  int depth = std::get<2>(mpi_result);
+
+#pragma omp parallel if(n_datapoints > OPENMP_MIN_N) default(shared)
   {
 #pragma omp single
     {
-      // we want to store the tree (in a temporary way) in an array whose size
-      // is a powersum of two
-      tree_size = powersum_of_two(n_datapoints, true);
-      // some of them are NOT going to be initialized since they are
-      // placeholders of leafs (last level of the tree) that are not present
-      // since n_datapoints < powersum_of_two.
-      pending_tree = new std::optional<DataPoint>[tree_size];
-
-      array_size starting_region_width;
-#ifdef ALTERNATIVE_SERIAL_WRITE
-      starting_region_width = tree_size;
-#else
-      starting_region_width = 1;
-#endif
-
-      std::vector<DataPoint>::iterator first_data_point =
-          std::get<0>(mpi_result);
-      std::vector<DataPoint>::iterator end_data_point = std::get<1>(mpi_result);
-      int depth = std::get<2>(mpi_result);
-
       build_tree_single_core(first_data_point, end_data_point, depth,
                              starting_region_width, 0, 0);
     }

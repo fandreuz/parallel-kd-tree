@@ -22,6 +22,10 @@ ADDITIONAL_FLAGS =
 OUT = tree.x
 COMPILER = mpic++
 
+OPENMP_MIN_N = $(openmp_min_n)
+OPENMP_MIN_N := $(or $(OPENMP_MIN_N), 1000)
+ADDITIONAL_FLAGS += -D OPENMP_MIN_N=$(OPENMP_MIN_N)
+
 # alternative writing mode?
 ifeq ($(write), alternative)
 	ADDITIONAL_FLAGS += -D ALTERNATIVE_SERIAL_WRITE

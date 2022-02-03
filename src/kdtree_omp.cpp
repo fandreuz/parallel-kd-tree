@@ -75,6 +75,11 @@ void KDTreeGreenhouse::build_tree_single_core(
         (depth == max_omp_depth + 1 &&
          omp_get_thread_num() >= surplus_omp_processes);
 
+#ifdef DEBUG
+    if (no_spawn_more_threads)
+      std::cout << "[rank" << mpi_rank << "] no more OpenMP tasks" << std::endl;
+#endif
+
     std::vector<DataPoint>::iterator right_branch_first_point =
         first_data_point + split_point_idx + 1;
 #pragma omp task default(shared) final(no_spawn_more_threads)
