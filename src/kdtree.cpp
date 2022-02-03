@@ -60,7 +60,7 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
 #else
       // we want to store the tree (in a temporary way) in an array whose size
       // is a powersum of two
-      serial_tree_size = bigger_powersum_of_two(n_datapoints);
+      serial_tree_size = powersum_of_two(n_datapoints, true);
       serial_tree = new std::optional<DataPoint>[serial_tree_size];
 
       int starting_region_width;

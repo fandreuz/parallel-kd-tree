@@ -1,34 +1,18 @@
 #include "utils.h"
 
-int bigger_powersum_of_two(array_size n) {
-  int base = 1;
-  array_size N = 0;
-  while (N < n) {
-    N += base;
-    base *= 2;
-  }
-  return N;
-}
+int powersum_of_two(array_size n, bool greater) {
+  // value of the current power of 2
+  int current_level_magnitude = 2;
+  // current value of the sum, and previous value
+  array_size sum = 1;
+  array_size prev_sum = 0;
 
-int smaller_powersum_of_two(array_size n) {
-  int base = 1;
-  array_size N = 0;
-  while (N < n) {
-    N += base;
-    base *= 2;
+  while (sum < n) {
+    prev_sum = sum;
+    sum += current_level_magnitude;
+    current_level_magnitude *= 2;
   }
-  return N - base / 2;
-}
-
-// transform the given DataPoint array in a 1D array such that `n_components`
-// contiguous items constitute a data point
-data_type *unpack_array(DataPoint *array, array_size n_datapoints,
-                        int n_components) {
-  data_type *unpacked = new data_type[n_datapoints * n_components];
-  for (array_size i = 0; i < n_datapoints; ++i) {
-    array[i].copy_to_array(unpacked + i * n_components, n_components);
-  }
-  return unpacked;
+  return greater ? sum : prev_sum;
 }
 
 data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
@@ -48,22 +32,6 @@ void unpack_array(data_type *dest, std::vector<DataPoint>::iterator first_point,
     (*i).copy_to_array(dest + offset, n_components);
     offset += n_components;
   }
-}
-
-// unpack an array which may contain uninitialized items
-data_type *unpack_risky_array(DataPoint *array, array_size n_datapoints,
-                              int n_components, bool *initialized) {
-  data_type *unpacked = new data_type[n_datapoints * n_components];
-  for (array_size i = 0; i < n_datapoints; ++i) {
-    if (initialized[i]) {
-      array[i].copy_to_array(unpacked + i * n_components, n_components);
-    } else {
-      for (int j = 0; j < n_components; ++j) {
-        unpacked[i * n_components + j] = EMPTY_PLACEHOLDER;
-      }
-    }
-  }
-  return unpacked;
 }
 
 data_type *unpack_optional_array(std::optional<DataPoint> *array,

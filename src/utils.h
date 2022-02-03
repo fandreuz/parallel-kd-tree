@@ -18,43 +18,21 @@
 #define EMPTY_PLACEHOLDER std::numeric_limits<int>::min()
 
 /**
- * @brief Return the smallest number N such that N >= n and N is a sum of powers
- *         of two.
+ * @brief Return the powersum of 2 nearest to the integer n.
  *
- * Return the smallest sum of powers of two greater than $n$.
- *
- * Example:
- *
- *     bigger_powersum_of_two(5) = 7 = 1 + 2 + 4
- *     bigger_powersum_of_two(3) = 3 = 1 + 2
- */
-int bigger_powersum_of_two(array_size n);
-
-/**
- * @brief Return the biggest number N such that N <= n and N is a sum of powers
- *         of two.
- *
- * Return the biggest sum of powers of two smaller than $n$.
+ * Depending on the value of `greater`, this function returns the smallest
+ * powersum of 2 such that `n` is smaller than the sum (`greater == true`), or
+ * the biggest powersum of 2 such that `n` is greater than the sum
+ * (`greater == false`).
  *
  * Example:
  *
- *     smaler_powersum_of_two(5) = 3 = 1 + 2
- *     smaller_powersum_of_two(7) = 7 = 1 + 2 + 4
+ *     powersum_of_two(5, false) = 3 = 1 + 2
+ *     powersum_of_two(7, false) = 7 = 1 + 2 + 4
+ *     powersum_of_two(5, true) = 7 = 1 + 2 + 4
+ *     powersum_of_two(3, true) = 3 = 1 + 2
  */
-int smaller_powersum_of_two(array_size n);
-
-/**
- * @brief Transform the given array of data points in a 1D array such that
- *          `n_components` contiguous items constitute a data point.
- *
- * @param array 1D array of data points.
- * @param n_datapoints  Number of data points in the array (i.e.
- * `length(array)`).
- * @param n_components  Number of components for each data point.
- * @return data_type* A 1D array of size `size*n_components`.
- */
-data_type *unpack_array(DataPoint *array, array_size n_datapoints,
-                        int n_components);
+int powersum_of_two(array_size n, bool greater);
 
 /**
  * @brief Transform the given sequence of data points in a 1D array such that
@@ -84,17 +62,9 @@ void unpack_array(data_type *dest, std::vector<DataPoint>::iterator first_point,
                   int n_components);
 
 /**
- * @brief Transform the given array (which may contain uninitialized values)
- *          of data points in a 1D array such that `n_components` contiguous
- * items constitute a data point.
- *
- * Transform the given array of data points, that potentially contains several
- * uninitialized items, in a 1D array such that `n_components` contiguous items
- * constitute a data point.
- *
- * `uninitialized` items are spotted using the boolean array `initialized`, and
- * are represented in the output with `n_components` consecutive
- * `EMPTY_PLACEHOLDER`.
+ * @brief Transform the given array of data points (which may contain
+ *           uninitialized values) in a 1D array such that `n_components`
+ *           contiguous items constitute a data point.
  *
  * @param array 1D array of data points.
  * @param n_datapoints  Number of data points in the array (i.e.
@@ -105,9 +75,6 @@ void unpack_array(data_type *dest, std::vector<DataPoint>::iterator first_point,
  *                      `array` has been initialized.
  * @return data_type* A 1D array of size `size*n_components`.
  */
-data_type *unpack_risky_array(DataPoint *array, array_size n_datapoints,
-                              int n_components, bool *initialized);
-
 data_type *unpack_optional_array(std::optional<DataPoint> *array,
                                  array_size n_datapoints, int n_components,
                                  data_type fallback_value);

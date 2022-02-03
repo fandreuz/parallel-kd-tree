@@ -84,10 +84,10 @@ void KDTreeGreenhouse::build_tree_parallel(
 
       // we want that the serial branch is storable in an array whose size is
       // a powersum of two
-      serial_tree_size = bigger_powersum_of_two(n_datapoints);
+      serial_tree_size = powersum_of_two(n_datapoints, true);
       // sum of them are NOT going to be initialized since they are placeholders
       // of leafs (last level of the tree) that are not present since
-      // n_datapoints < bigger_powersum_of_two
+      // n_datapoints < powersum_of_two
       serial_tree = new std::optional<DataPoint>[serial_tree_size];
 
       int starting_region_width;
