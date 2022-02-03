@@ -50,7 +50,7 @@ data_type *KDTreeGreenhouse::retrieve_dataset_info() {
    - depth is the depth of a node created by a call to build_tree. depth starts
     from 0
 */
-mpi_parallelization_result KDTreeGreenhouse::build_tree_parallel(
+mpi_parallelization_result KDTreeGreenhouse::build_tree_mpi(
     std::vector<DataPoint>::iterator first_data_point,
     std::vector<DataPoint>::iterator end_data_point, int depth) {
 #ifdef MPI_DEBUG
@@ -151,7 +151,7 @@ mpi_parallelization_result KDTreeGreenhouse::build_tree_parallel(
     n_datapoints = split_point_idx;
 
     // this process takes care of the left part
-    auto tp = build_tree_parallel(first_data_point,
+    auto tp = build_tree_mpi(first_data_point,
                                   right_branch_first_point - 1, next_depth);
 
     // the buffer will be destroyed when the stack is destroyed, therefore we

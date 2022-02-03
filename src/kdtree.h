@@ -59,15 +59,26 @@ using mpi_parallelization_result =
 class KDTreeGreenhouse {
 private:
   array_size n_datapoints;
+  // number of data points assigned to this greenhouse, may decrease if a
+  // portion is assigned to another MPI process.
   int n_components;
 
-  // the depth which this k-d tree starts from when this MPI process is awake,
+  // the depth which this k-d tree starts from when this MPI process is awaken,
   // used to determine which child process are to be used in further parallel
   // splittings.
   int starting_depth = 0;
 
   // rank of this MPI process
   int mpi_rank = -1;
+  // children of this process, i.e. processes that received a right branch from
+  // this MPI process.
+  std::vector<int> children;
+  // MPI rank of the parent process of this process
+  int parent = -1;
+
+  // DataPoint used to split a branch assigned to this MPI process. this process
+  // then received the left branch resulting from the split.
+  std::vector<DataPoint> parallel_splits;
 
   // an MPI_Communicator which does not hold the main process.
   MPI_Comm no_main_communicator;
@@ -93,34 +104,27 @@ private:
   // maximum number of OpenMP tasks.
   int surplus_omp_processes = 0;
 
-  // number of items assigned to this process (to be treated using OpenMP).
-  array_size serial_tree_size = 0;
-  // maximum depth of the serial sub-tree.
-  int max_serial_depth = 0;
-
-  // DataPoints in the serial branch assigned to this process. see also
-  // build_tree_serial
-  std::optional<DataPoint> *serial_tree = nullptr;
-
-  // MPI rank of the parent process of this process
-  int parent = -1;
-
-  // DataPoint used to split a branch assigned to this process. this process
-  // then received the left branch resulting from the split.
-  std::vector<DataPoint> parallel_splits;
-
-  // children of this process, i.e. processes that received a right branch from
-  // this MPI process.
-  std::vector<int> children;
+  // number of elements in the tree produced by this core. it's equal to the
+  // smallest powersum of 2 bigger than the number of datapoints assigned to
+  // this core.
+  array_size tree_size = 0;
+  // array of DataPoints already placed into the tree using OpenMP or serially.
+  std::optional<DataPoint> *pending_tree = nullptr;
 
   // a pool of ready-to-use memory which can be used as a buffer to store
   // temporary the content of the right branch before sending it to the
   // appropriate MPI process.
   data_type *right_branch_memory_pool = nullptr;
-
   // an MPI request which monitors the operation of sending data to the right
   // branch.
   MPI_Request right_branch_send_data_request = MPI_REQUEST_NULL;
+
+  // wait for another MPI process to pass the data assigned to this MPI process
+  data_type *retrieve_dataset_info();
+
+  mpi_parallelization_result
+  start_mpi_growth(std::vector<DataPoint> &data_points);
+  void start_omp_growth(mpi_parallelization_result mpi_result);
 
   array_size grown_kdtree_size = 0;
   data_type *grown_kdtree_1d = nullptr;
@@ -129,25 +133,17 @@ private:
   void grow_kd_tree(std::vector<DataPoint> &data_points);
 
   mpi_parallelization_result
-  start_mpi_growth(std::vector<DataPoint> &data_points);
+  build_tree_mpi(std::vector<DataPoint>::iterator first_data_point,
+                 std::vector<DataPoint>::iterator end_data_point, int depth);
 
-  void start_omp_growth(mpi_parallelization_result mpi_result);
-
-  data_type *retrieve_dataset_info();
-
-  mpi_parallelization_result
-  build_tree_parallel(std::vector<DataPoint>::iterator first_data_point,
-                      std::vector<DataPoint>::iterator end_data_point,
-                      int depth);
-
-  void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
-                         std::vector<DataPoint>::iterator end_data_point,
-                         int depth, array_size region_width,
-                         array_size region_start_index,
-                         array_size branch_starting_index);
+  void build_tree_single_core(std::vector<DataPoint>::iterator first_data_point,
+                              std::vector<DataPoint>::iterator end_data_point,
+                              int depth, array_size region_width,
+                              array_size region_start_index,
+                              array_size branch_starting_index);
 
   void finalize_mpi();
-  void finalize_omp();
+  void finalize_single_core();
 
 public:
   KDTreeGreenhouse(data_type *data, array_size n_datapoints, int n_components);

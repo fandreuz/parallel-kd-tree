@@ -1,26 +1,27 @@
 #include "kdtree.h"
 
 /*
-   Construct a tree serially. The current process takes care of both the left
-   and right branch.
+   Construct a tree using OpenMP or serially. The current process takes care of
+   both the left and right branch.
 
-   A region (i.e. k contiguous elements) of serial_tree holds an entire level
-   of the k-d tree (i.e. elements whose distance from the root is the same).
+   A region (i.e. k contiguous elements) of pending_tree holds an entire level
+   of the k-d tree (i.e. elements whose distance from the root is the same), but
+   this may not be true if ALTERNATIVE_SERIAL_WRITE is enabled.
 
    - first_data_point is an iterator pointing to the first data point in the
       set;
    - end_data_point is an iterator pointing to past-the-last data point;
    - depth is the depth of the tree after the addition of this new level;
-   - region_width is the width of the current region of serial_tree which
-      holds the current level of the serial tree. this increases (multiplied
+   - region_width is the width of the current region of pending_tree which
+      holds the current level of the tree. this increases (multiplied
       by 2) at each recursive call;
-   - region_start_index is the index of serial_tree in which the region
+   - region_start_index is the index of pending_tree in which the region
       corresponding to the current level starts (i.e. the index after the end
       of the region corresponding to the level before);
-   - branch_starting_index is the index of serial_tree (starting from
+   - branch_starting_index is the index of pending_tree (starting from
       region_width) in which the item used to split this branch is stored.
 */
-void KDTreeGreenhouse::build_tree_serial(
+void KDTreeGreenhouse::build_tree_single_core(
     std::vector<DataPoint>::iterator first_data_point,
     std::vector<DataPoint>::iterator end_data_point, int depth,
     array_size region_width, array_size region_start_index,
@@ -31,14 +32,14 @@ void KDTreeGreenhouse::build_tree_serial(
     // if we encounter the flag ALTERNATIVE_SERIAL_WRITE the parameter
     // branch_starting_index will always be zero, therefore it does not
     // interphere with this writing.
-    serial_tree[region_start_index + branch_starting_index].emplace(
+    pending_tree[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*first_data_point)));
   } else {
     int dimension = select_splitting_dimension(depth, n_components);
     array_size split_point_idx =
         sort_and_split(first_data_point, end_data_point, dimension);
 
-    serial_tree[region_start_index + branch_starting_index].emplace(
+    pending_tree[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*(first_data_point + split_point_idx))));
 
     array_size region_start_index_left, region_start_index_right;
@@ -79,15 +80,15 @@ void KDTreeGreenhouse::build_tree_serial(
 #pragma omp task default(shared) final(no_spawn_more_threads)
     {
       // right
-      build_tree_serial(right_branch_first_point, end_data_point, depth,
-                        region_width, region_start_index_right,
-                        branch_start_index_right);
+      build_tree_single_core(right_branch_first_point, end_data_point, depth,
+                             region_width, region_start_index_right,
+                             branch_start_index_right);
     }
     // left
     if (split_point_idx > 0)
-      build_tree_serial(first_data_point, right_branch_first_point - 1, depth,
-                        region_width, region_start_index_left,
-                        branch_start_index_left);
+      build_tree_single_core(first_data_point, right_branch_first_point - 1,
+                             depth, region_width, region_start_index_left,
+                             branch_start_index_left);
 
 // there are variables on the stack, we should wait before letting this
 // function die. this is not a big deal since all recursive call are going to
@@ -96,15 +97,17 @@ void KDTreeGreenhouse::build_tree_serial(
   }
 }
 
-void KDTreeGreenhouse::finalize_omp() {
-  grown_kdtree_size = serial_tree_size;
-  grown_kdtree_1d = unpack_optional_array(serial_tree, serial_tree_size,
-                                          n_components, EMPTY_PLACEHOLDER);
+void KDTreeGreenhouse::finalize_single_core() {
+  grown_kdtree_size = tree_size;
+  grown_kdtree_1d = unpack_optional_array(pending_tree, tree_size, n_components,
+                                          EMPTY_PLACEHOLDER);
+  delete[] pending_tree;
+
 #ifdef ALTERNATIVE_SERIAL_WRITE
-  data_type *temp_tree = new data_type[serial_tree_size * n_components];
-  rearrange_kd_tree(temp_tree, grown_kdtree_1d, max_serial_depth,
-                    serial_tree_size, n_components);
-  delete[] serial_tree;
+  data_type *temp_tree = new data_type[tree_size * n_components];
+  rearrange_kd_tree(temp_tree, grown_kdtree_1d, max_omp_depth, tree_size,
+                    n_components);
+  delete[] grown_kdtree_1d;
   grown_kdtree_1d = temp_tree;
 #endif
 }

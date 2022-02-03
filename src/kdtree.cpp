@@ -44,7 +44,7 @@ void KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> &data_points) {
   if (std::get<0>(mpi_result) != std::get<1>(mpi_result))
     start_omp_growth(mpi_result);
 
-  finalize_omp();
+  finalize_single_core();
   finalize_mpi();
 
   // tree is nullptr if the branch assigned to this MPI process was empty
@@ -62,7 +62,7 @@ KDTreeGreenhouse::start_mpi_growth(std::vector<DataPoint> &data_points) {
   // we will ever need for this branch.
   right_branch_memory_pool = new data_type[n_datapoints / 2 * n_components];
   // start parallel construction of the kd-tree using MPI.
-  auto tp = build_tree_parallel(data_points.begin(), data_points.end(),
+  auto tp = build_tree_mpi(data_points.begin(), data_points.end(),
                                 starting_depth);
 
   // before deleting the pool, we wait the last communication to be
@@ -80,15 +80,15 @@ void KDTreeGreenhouse::start_omp_growth(mpi_parallelization_result mpi_result) {
     {
       // we want to store the tree (in a temporary way) in an array whose size
       // is a powersum of two
-      serial_tree_size = powersum_of_two(n_datapoints, true);
+      tree_size = powersum_of_two(n_datapoints, true);
       // some of them are NOT going to be initialized since they are
       // placeholders of leafs (last level of the tree) that are not present
       // since n_datapoints < powersum_of_two.
-      serial_tree = new std::optional<DataPoint>[serial_tree_size];
+      pending_tree = new std::optional<DataPoint>[tree_size];
 
       array_size starting_region_width;
 #ifdef ALTERNATIVE_SERIAL_WRITE
-      starting_region_width = serial_tree_size;
+      starting_region_width = tree_size;
 #else
       starting_region_width = 1;
 #endif
@@ -98,8 +98,8 @@ void KDTreeGreenhouse::start_omp_growth(mpi_parallelization_result mpi_result) {
       std::vector<DataPoint>::iterator end_data_point = std::get<1>(mpi_result);
       int depth = std::get<2>(mpi_result);
 
-      build_tree_serial(first_data_point, end_data_point, depth,
-                        starting_region_width, 0, 0);
+      build_tree_single_core(first_data_point, end_data_point, depth,
+                             starting_region_width, 0, 0);
     }
   }
 }

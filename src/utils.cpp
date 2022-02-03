@@ -182,18 +182,6 @@ KNode<data_type> *convert_to_knodes(data_type *tree, array_size n_datapoints,
                                 n_components, nullptr, nullptr, false);
 }
 
-array_size sort_and_split(DataPoint *array, array_size n_datapoints, int axis) {
-  // the second part of median_idx is needed to unbalance the split towards
-  // the left region (which is the one which may parallelize with the highest
-  // probability).
-  array_size median_idx = n_datapoints / 2 - 1 * ((n_datapoints + 1) % 2);
-  std::nth_element(array, array + median_idx, array + n_datapoints,
-                   DataPointCompare(axis));
-  // if size is 2 we want to return the first element (the smallest one),
-  // since it will be placed into the first empty spot in serial_split
-  return median_idx;
-}
-
 array_size sort_and_split(std::vector<DataPoint>::iterator first_data_point,
                           std::vector<DataPoint>::iterator last_data_point,
                           int axis) {
@@ -205,8 +193,6 @@ array_size sort_and_split(std::vector<DataPoint>::iterator first_data_point,
   array_size median_idx = size / 2 - 1 * ((size + 1) % 2);
   std::nth_element(first_data_point, first_data_point + median_idx,
                    last_data_point, DataPointCompare(axis));
-  // if size is 2 we want to return the first element (the smallest one),
-  // since it will be placed into the first empty spot in serial_split
   return median_idx;
 }
 
