@@ -2,7 +2,7 @@
 
 data_type *KDTreeGreenhouse::retrieve_dataset_info() {
 #ifdef DEBUG
-  std::cout << "[rank" << rank << "]: went to sleep" << std::endl;
+  std::cout << "[rank" << mpi_rank << "]: went to sleep" << std::endl;
 #endif
 
   MPI_Status status;
@@ -30,7 +30,7 @@ data_type *KDTreeGreenhouse::retrieve_dataset_info() {
   }
 
 #ifdef DEBUG
-  std::cout << "[rank" << rank << "]: waked by rank" << parent << std::endl;
+  std::cout << "[rank" << mpi_rank << "]: waked by rank" << parent << std::endl;
 #endif
 
   return data;
@@ -58,7 +58,7 @@ mpi_parallelization_result KDTreeGreenhouse::build_tree_mpi(
     int debug_rank = atoi(getenv("MPI_DEBUG_RANK"));
     std::cerr << "MPI_DEBUG_RANK=" << atoi(getenv("MPI_DEBUG_RANK"))
               << std::endl;
-    if (rank == debug_rank) {
+    if (mpi_rank == debug_rank) {
       volatile int i = 0;
       char hostname[256];
       gethostname(hostname, sizeof(hostname));
@@ -79,7 +79,7 @@ mpi_parallelization_result KDTreeGreenhouse::build_tree_mpi(
   // available to parallelize
   if (right_process_rank == -1) {
 #ifdef DEBUG
-    std::cout << "[rank" << rank
+    std::cout << "[rank" << mpi_rank
               << "]: no available MPI processes, going OpenMP from now "
               << std::endl;
 #endif
@@ -101,21 +101,21 @@ mpi_parallelization_result KDTreeGreenhouse::build_tree_mpi(
       children.push_back(right_branch_size > 0 ? right_process_rank : -1);
 
 #ifdef DEBUG
-      std::cout << "[rank" << rank << "]: parallel split against axis "
+      std::cout << "[rank" << mpi_rank << "]: parallel split against axis "
                 << dimension << ", split_idx = " << split_point_idx
                 << ", rank of the expected children is "
                 << children[children.size() - 1] << std::endl;
 #endif
     } else {
 #ifdef DEBUG
-      std::cout << "[rank" << rank
+      std::cout << "[rank" << mpi_rank
                 << "]: simulating a parallel split to wake rank"
                 << right_process_rank << std::endl;
 #endif
     }
 
 #ifdef DEBUG
-    std::cout << "[rank" << rank
+    std::cout << "[rank" << mpi_rank
               << "]: delegating right region (starting from) "
               << split_point_idx + 1 << " (size " << right_branch_size << " of "
               << n_datapoints << ") to rank" << right_process_rank << std::endl;
@@ -167,7 +167,7 @@ void KDTreeGreenhouse::finalize_mpi() {
   int n_children = children.size();
 
 #ifdef DEBUG
-  std::cout << "[rank" << rank
+  std::cout << "[rank" << mpi_rank
             << "]: finalize called. #children = " << n_children << std::endl;
 #endif
 
