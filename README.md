@@ -216,6 +216,10 @@ There are some configurations available:
 - [x] Put OpenMP and MPI implementations in the same file;
 - [ ] Mix OpenMP with MPI when the distribution of the branches with MPI is over;
 - [ ] Performance evaluation;
+- [ ] Minor optimizations:
+  - [ ] `noexcept`;
+  - [ ] `-fargument-noalias`;
+  - [ ] `std::distance` is `O(N)`.
 - [ ] Comparison against other implementations(?)
 
 ## Interesting points
