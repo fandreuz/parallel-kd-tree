@@ -4,7 +4,7 @@ template void log_message(std::string);
 template void log_message(KNode<data_type> &);
 
 int main(int argc, char **argv) {
-  init_parallel_environment(&argc, &argv);
+  MPI_Init(&argc, &argv);
 
   const std::string filename =
       argc > 1 ? argv[1] : "../benchmark/benchmark1.csv";

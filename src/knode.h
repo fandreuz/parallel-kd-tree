@@ -3,10 +3,7 @@
 
 #include <iostream>
 #include <limits>
-
-#ifdef USE_MPI
 #include <mpi.h>
-#endif
 
 #if !defined(DOUBLE_PRECISION)
 /**
@@ -20,13 +17,11 @@
  */
 #define string_converter std::stof
 
-#ifdef USE_MPI
 /**
  * @def
  * @brief MPI version of `data_type`.
  */
 #define mpi_data_type MPI_FLOAT
-#endif
 
 #else
 /**
@@ -40,13 +35,11 @@
  */
 #define string_converter std::stod
 
-#ifdef USE_MPI
 /**
  * @def
  * @brief MPI version of `data_type`.
  */
 #define mpi_data_type MPI_DOUBLE
-#endif
 
 #endif
 

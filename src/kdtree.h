@@ -10,14 +10,18 @@
 #include <iostream>
 #include <math.h>
 #include <optional>
+#include <tuple>
 #include <unistd.h>
 #include <vector>
 
-#ifdef USE_MPI
 #include <mpi.h>
-#else
 #include <omp.h>
-#endif
+
+// a tuple which packs some info about the result of parallelization with MPI,
+// which are then used in the parallelization with OpenMP.
+using mpi_parallelization_result =
+    std::tuple<std::vector<DataPoint>::iterator,
+               std::vector<DataPoint>::iterator, int>;
 
 /**
  * @def
@@ -57,31 +61,39 @@ private:
   array_size n_datapoints;
   int n_components;
 
-  // the depth which this k-d tree starts from, used to determine which
-  // child process are to be used in further parallel splittings
+  // the depth which this k-d tree starts from when this MPI process is awake,
+  // used to determine which child process are to be used in further parallel
+  // splittings.
   int starting_depth = 0;
 
-#ifdef USE_MPI
-  // rank of this process
-  int rank = -1;
+  // rank of this MPI process
+  int mpi_rank = -1;
 
   // an MPI_Communicator which does not hold the main process.
   MPI_Comm no_main_communicator;
-#endif
 
   // number of MPI processes available
-  int n_parallel_workers = -1;
+  int n_mpi_workers = -1;
+  // number of OpenMP processes available
+  int n_omp_workers = -1;
 
-  // maximum depth of the tree at which we can parallelize. after this depth no
-  // more right-branches can be assigned to non-surplus processes
-  int max_depth = 0;
+  // maximum depth of the tree at which we can parallelize using MPI. after this
+  // depth no more right-branches can be assigned to non-surplus processes
+  int max_mpi_depth = 0;
+  // maximum depth of the tree at which we can parallelize using OpenMP. this
+  // is used in practice to determine the maximum number of OpenMP tasks.
+  int max_omp_depth = 0;
 
-  // number of additional processes that are not enough to parallelize an entire
-  // level of the tree, they are assigned left-to-right until there are no more
-  // surplus processes
-  int surplus_processes = 0;
+  // number of additional MPI processes that are not enough to parallelize an
+  // entire level of the tree: they are assigned left-to-right to the processes
+  // in the last fully-parallelizable level.
+  int surplus_mpi_processes = 0;
+  // number of additional OpenMP processes that are not enough to parallelize an
+  // entire level of the tree. they are used in practice to determine the
+  // maximum number of OpenMP tasks.
+  int surplus_omp_processes = 0;
 
-  // number of items assigned serially (i.e. non-parallelizable) to this process
+  // number of items assigned to this process (to be treated using OpenMP).
   array_size serial_tree_size = 0;
   // maximum depth of the serial sub-tree.
   int max_serial_depth = 0;
@@ -90,8 +102,7 @@ private:
   // build_tree_serial
   std::optional<DataPoint> *serial_tree = nullptr;
 
-#ifdef USE_MPI
-  // rank of the parent process of this process
+  // MPI rank of the parent process of this process
   int parent = -1;
 
   // DataPoint used to split a branch assigned to this process. this process
@@ -99,36 +110,44 @@ private:
   std::vector<DataPoint> parallel_splits;
 
   // children of this process, i.e. processes that received a right branch from
-  // this process
+  // this MPI process.
   std::vector<int> children;
 
   // a pool of ready-to-use memory which can be used as a buffer to store
   // temporary the content of the right branch before sending it to the
-  // appropriate process
-  data_type* right_branch_memory_pool = nullptr;
+  // appropriate MPI process.
+  data_type *right_branch_memory_pool = nullptr;
+
   // an MPI request which monitors the operation of sending data to the right
-  // branch
+  // branch.
   MPI_Request right_branch_send_data_request = MPI_REQUEST_NULL;
-#endif
 
   array_size grown_kdtree_size = 0;
+  data_type *grown_kdtree_1d = nullptr;
   KNode<data_type> *grown_kd_tree = nullptr;
 
-  data_type *grow_kd_tree(std::vector<DataPoint> data_points);
+  void grow_kd_tree(std::vector<DataPoint> &data_points);
 
-#ifdef USE_MPI
+  mpi_parallelization_result
+  start_mpi_growth(std::vector<DataPoint> &data_points);
+
+  void start_omp_growth(mpi_parallelization_result mpi_result);
+
   data_type *retrieve_dataset_info();
-  void build_tree_parallel(std::vector<DataPoint>::iterator first_data_point,
-                           std::vector<DataPoint>::iterator end_data_point,
-                           int depth);
-#endif
+
+  mpi_parallelization_result
+  build_tree_parallel(std::vector<DataPoint>::iterator first_data_point,
+                      std::vector<DataPoint>::iterator end_data_point,
+                      int depth);
 
   void build_tree_serial(std::vector<DataPoint>::iterator first_data_point,
                          std::vector<DataPoint>::iterator end_data_point,
                          int depth, array_size region_width,
                          array_size region_start_index,
                          array_size branch_starting_index);
-  data_type *finalize();
+
+  void finalize_mpi();
+  void finalize_omp();
 
 public:
   KDTreeGreenhouse(data_type *data, array_size n_datapoints, int n_components);

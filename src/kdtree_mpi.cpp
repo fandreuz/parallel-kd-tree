@@ -50,7 +50,7 @@ data_type *KDTreeGreenhouse::retrieve_dataset_info() {
    - depth is the depth of a node created by a call to build_tree. depth starts
     from 0
 */
-void KDTreeGreenhouse::build_tree_parallel(
+mpi_parallelization_result KDTreeGreenhouse::build_tree_parallel(
     std::vector<DataPoint>::iterator first_data_point,
     std::vector<DataPoint>::iterator end_data_point, int depth) {
 #ifdef MPI_DEBUG
@@ -71,41 +71,19 @@ void KDTreeGreenhouse::build_tree_parallel(
 #endif
 
   int next_depth = depth + 1;
-  int right_process_rank = compute_next_process_rank(
-      rank, max_depth, next_depth, surplus_processes, n_parallel_workers);
+  int right_process_rank =
+      compute_next_process_rank(mpi_rank, max_mpi_depth, next_depth,
+                                surplus_mpi_processes, n_mpi_workers);
 
+  // if right_process_rank is 1, this means that there are no more MPI processes
+  // available to parallelize
   if (right_process_rank == -1) {
-    if (n_datapoints > 0) {
 #ifdef DEBUG
-      std::cout << "[rank" << rank
-                << "]: no available processes, going serial from now "
-                << std::endl;
+    std::cout << "[rank" << rank
+              << "]: no available MPI processes, going OpenMP from now "
+              << std::endl;
 #endif
-
-      // we want that the serial branch is storable in an array whose size is
-      // a powersum of two
-      serial_tree_size = powersum_of_two(n_datapoints, true);
-      // sum of them are NOT going to be initialized since they are placeholders
-      // of leafs (last level of the tree) that are not present since
-      // n_datapoints < powersum_of_two
-      serial_tree = new std::optional<DataPoint>[serial_tree_size];
-
-      int starting_region_width;
-#ifdef ALTERNATIVE_SERIAL_WRITE
-      starting_region_width = serial_tree_size;
-#else
-      starting_region_width = 1;
-#endif
-
-      build_tree_serial(first_data_point, end_data_point, depth,
-                        starting_region_width, 0, 0);
-    } else {
-#ifdef DEBUG
-      std::cout << "[rank" << rank << "]: build_tree_parallel is dead now "
-                << std::endl;
-#endif
-      // otherwise there's nothing to do
-    }
+    return std::make_tuple(first_data_point, end_data_point, depth);
   } else {
     int dimension = select_splitting_dimension(depth, n_components);
     array_size split_point_idx = 0;
@@ -147,7 +125,7 @@ void KDTreeGreenhouse::build_tree_parallel(
     int right_branch_data[4];
     right_branch_data[0] = right_branch_size;
     right_branch_data[1] = next_depth;
-    right_branch_data[2] = rank;
+    right_branch_data[2] = mpi_rank;
     right_branch_data[3] = n_components;
     MPI_Isend(right_branch_data, 4, MPI_INT, right_process_rank,
               TAG_RIGHT_PROCESS_START_INFO, MPI_COMM_WORLD, &info_request);
@@ -173,16 +151,18 @@ void KDTreeGreenhouse::build_tree_parallel(
     n_datapoints = split_point_idx;
 
     // this process takes care of the left part
-    build_tree_parallel(first_data_point, right_branch_first_point - 1,
-                        next_depth);
+    auto tp = build_tree_parallel(first_data_point,
+                                  right_branch_first_point - 1, next_depth);
 
     // the buffer will be destroyed when the stack is destroyed, therefore we
     // wait the end of the asynchronous operation
     MPI_Wait(&info_request, MPI_STATUS_IGNORE);
+
+    return tp;
   }
 }
 
-data_type *KDTreeGreenhouse::finalize() {
+void KDTreeGreenhouse::finalize_mpi() {
   // we wait for all the child processes to complete their work
   int n_children = children.size();
 
@@ -196,21 +176,8 @@ data_type *KDTreeGreenhouse::finalize() {
   // buffer which contains the split indexes from the right branch
   data_type *right_branch_buffer = nullptr;
 
-  data_type *left_branch_buffer = nullptr;
-  array_size left_branch_size = serial_tree_size;
-
-  if (serial_tree_size > 0) {
-    left_branch_buffer = unpack_optional_array(serial_tree, serial_tree_size,
-                                               n_components, EMPTY_PLACEHOLDER);
-#ifdef ALTERNATIVE_SERIAL_WRITE
-    data_type *temp_left_buffer =
-        new data_type[serial_tree_size * n_components];
-    rearrange_kd_tree(temp_left_buffer, left_branch_buffer, max_serial_depth,
-                      serial_tree_size, n_components);
-    delete[] left_branch_buffer;
-    left_branch_buffer = temp_left_buffer;
-#endif
-  }
+  data_type *left_branch_buffer = grown_kdtree_1d;
+  array_size left_branch_size = grown_kdtree_size;
 
   // merged_array contains the values which results from merging a right branch
   // with a left branch.
@@ -298,5 +265,5 @@ data_type *KDTreeGreenhouse::finalize() {
   }
 
   grown_kdtree_size = left_branch_size;
-  return left_branch_buffer;
+  grown_kdtree_1d = left_branch_buffer;
 }

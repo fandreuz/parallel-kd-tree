@@ -16,22 +16,11 @@
 #		   	           files)
 
 .DEFAULT_GOAL := output
-FLAGS = -std=c++17 -Wall -Wextra
-UTILITIES = main.cpp file_utils.cpp tree_printer.cpp utils.cpp kdtree.cpp
+FLAGS = -std=c++17 -Wall -Wextra -fargument-noalias -fopenmp
+UTILITIES = main.cpp file_utils.cpp tree_printer.cpp utils.cpp kdtree.cpp kdtree_mpi.cpp kdtree_omp.cpp
 ADDITIONAL_FLAGS =
-
-# OpenMP or MPI?
-ifeq ($(src), mpi)
-	SRC = kdtree_mpi.cpp
-	ADDITIONAL_FLAGS += -D USE_MPI
-	COMPILER = mpic++
-	OUT = tree_mpi.x
-else
-	SRC = kdtree_omp.cpp
-	ADDITIONAL_FLAGS += -fopenmp
-	COMPILER = g++
-	OUT = tree_omp.x
-endif
+OUT = tree.x
+COMPILER = mpic++
 
 # alternative writing mode?
 ifeq ($(write), alternative)
