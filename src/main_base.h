@@ -39,16 +39,6 @@ template <typename T> inline void log_message(T obj) {
     std::cout << obj << std::endl;
 }
 
-inline void finalize_parallel_environment() {
-#ifdef DEBUG
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  std::cout << "[rank" << rank << "] finalizing" << std::endl;
-#endif
-
-  MPI_Finalize();
-}
-
 #ifdef TEST
 inline bool initialize_test(KNode<data_type> *tree, int n_components) {
   std::vector<std::optional<data_type>> *constraints =

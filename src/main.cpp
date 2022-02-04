@@ -4,7 +4,21 @@ template void log_message(std::string);
 template void log_message(KNode<data_type> &);
 
 int main(int argc, char **argv) {
-  MPI_Init(&argc, &argv);
+  int provided_mpi_threading;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided_mpi_threading);
+#ifdef DEBUG
+  if (provided_mpi_threading == MPI_THREAD_SINGLE) {
+    log_message("MPI threading:  single");
+  } else if (provided_mpi_threading == MPI_THREAD_FUNNELED) {
+    log_message("MPI threading:  funneled");
+  } else if (provided_mpi_threading == MPI_THREAD_SERIALIZED) {
+    log_message("MPI threading:  serialized");
+  } else if (provided_mpi_threading == MPI_THREAD_MULTIPLE) {
+    log_message("MPI threading:  multiple");
+  } else {
+    log_message("MPI threading:  unknown");
+  }
+#endif
 
   const std::string filename =
       argc > 1 ? argv[1] : "../benchmark/benchmark1.csv";
@@ -54,5 +68,11 @@ int main(int argc, char **argv) {
     log_message("!!! NO !!!");
 #endif
 
-  finalize_parallel_environment();
+#ifdef DEBUG
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  std::cout << "[rank" << rank << "] finalizing" << std::endl;
+#endif
+
+  MPI_Finalize();
 }
