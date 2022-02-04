@@ -10,12 +10,6 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
   surplus_mpi_processes =
       compute_n_surplus_processes(n_mpi_workers, max_mpi_depth);
 
-  // OpenMP
-  n_omp_workers = omp_get_num_threads();
-  max_omp_depth = compute_max_depth(n_omp_workers);
-  surplus_omp_processes =
-      compute_n_surplus_processes(n_omp_workers, max_omp_depth);
-
   // if this MPI process is not main, it's going to receive `nullptr` in the
   // parameter `data`. therefore we need to retrieve the dataset from a parent
   // MPI process.
@@ -88,6 +82,11 @@ void KDTreeGreenhouse::start_omp_growth(mpi_parallelization_result mpi_result) {
   {
 #pragma omp single
     {
+      int n_omp_workers = omp_get_num_threads();
+      max_omp_depth = compute_max_depth(n_omp_workers);
+      surplus_omp_processes =
+          compute_n_surplus_processes(n_omp_workers, max_omp_depth);
+
       array_size starting_region_width;
 #ifdef ALTERNATIVE_SERIAL_WRITE
       starting_region_width = tree_size;

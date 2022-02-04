@@ -85,8 +85,6 @@ private:
 
   // number of MPI processes available
   int n_mpi_workers = -1;
-  // number of OpenMP processes available
-  int n_omp_workers = -1;
 
   // maximum depth of the tree at which we can parallelize using MPI. after this
   // depth no more right-branches can be assigned to non-surplus processes
