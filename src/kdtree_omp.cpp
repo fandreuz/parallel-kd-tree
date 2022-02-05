@@ -25,18 +25,6 @@ void KDTreeGreenhouse::build_tree_single_core(
     std::vector<DataPoint>::iterator end_data_point, int depth,
     array_size region_width, array_size region_start_index,
     array_size branch_starting_index) {
-  // we update the maximum (single core) depth reached
-#pragma omp master
-  {
-    int parallel_depth;
-#ifdef USE_MPI
-    parallel_depth = max_parallel_depth;
-#else
-    parallel_depth = 0;
-#endif
-    max_tree_depth = std::max(max_tree_depth, depth - parallel_depth);
-  }
-
   // this is equivalent to say that there is at most one data point in the
   // sequence
   if (first_data_point + 1 == end_data_point) {
@@ -93,6 +81,10 @@ void KDTreeGreenhouse::build_tree_single_core(
         first_data_point + split_point_idx + 1;
 #pragma omp task default(shared) final(no_spawn_more_threads)
     {
+#ifdef DEBUG
+      std::cout << "Task assigned to thread " << omp_get_thread_num()
+                << std::endl;
+#endif
       // right
       build_tree_single_core(right_branch_first_point, end_data_point, depth,
                              region_width, region_start_index_right,
@@ -117,7 +109,7 @@ data_type *KDTreeGreenhouse::finalize() {
                                           EMPTY_PLACEHOLDER);
 #ifdef ALTERNATIVE_SERIAL_WRITE
   data_type *temp_tree = new data_type[tree_size * n_components];
-  rearrange_kd_tree(temp_tree, tree, max_tree_depth, tree_size, n_components);
+  rearrange_kd_tree(temp_tree, tree, tree_size, n_components);
   delete[] tree;
   tree = temp_tree;
 #endif

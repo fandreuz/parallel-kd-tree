@@ -103,19 +103,8 @@ void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
                     array_size branches_size, int n_components);
 
 #ifdef ALTERNATIVE_SERIAL_WRITE
-/**
- * @brief Rearrange a k-d tree stored in a bisectional way.
- *
- * @param dest    1D array in which we are going to store the content of
- *                  `branch1`, `branch2`.
- * @param src The source k-d tree.
- * @param branches_size Size of `branch1` and `branch2` (number of data points,
- *                        **not** number of data points times the number of
- *                        dimensions).
- * @param n_components    Number of dimensions for each data point.
- */
-void rearrange_kd_tree(data_type *dest, data_type *src, int max_depth,
-                       array_size n_datapoints, int n_components);
+void rearrange_kd_tree(data_type *dest, data_type *src, array_size subtree_size,
+                       int n_components);
 #endif
 
 /**

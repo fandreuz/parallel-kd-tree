@@ -84,8 +84,8 @@ void merge_kd_trees(data_type *dest, data_type *branch1, data_type *branch2,
 }
 
 #ifdef ALTERNATIVE_SERIAL_WRITE
-void rearrange_kd_tree(data_type *dest, data_type *src, int max_depth,
-                       array_size n_datapoints, int n_components) {
+void rearrange_kd_tree(data_type *dest, data_type *src, array_size subtree_size,
+                       int n_components) {
   // the i-th element of level_start holds the index (in dest) of the first
   // element of the i-th tree level.
   std::vector<array_size> level_start;
@@ -101,11 +101,14 @@ void rearrange_kd_tree(data_type *dest, data_type *src, int max_depth,
   std::vector<array_size> powers_of_two;
   powers_of_two.push_back(1);
 
+  array_size current_sum = 1;
+
   // we initialize the vectors with all the indexes we need.
-  for (int i = 1; i <= max_depth; ++i) {
+  for (int i = 1; current_sum < subtree_size; ++i) {
     nodes_in_level.push_back(0);
     powers_of_two.push_back(powers_of_two[i - 1] * 2);
     level_start.push_back(level_start[i - 1] + powers_of_two[i - 1]);
+    current_sum += powers_of_two[i];
   }
 
   // we copy just the first data point
@@ -114,7 +117,7 @@ void rearrange_kd_tree(data_type *dest, data_type *src, int max_depth,
   // the level in which we expect to insert the next visited node.
   int next_node_level = 1;
 
-  for (array_size i = 1; i < n_datapoints; ++i) {
+  for (array_size i = 1; i < subtree_size; ++i) {
     // first of all we insert the node being visisted in the first available
     // spot in the proper tree level.
     array_size first_available_spot =
@@ -128,7 +131,7 @@ void rearrange_kd_tree(data_type *dest, data_type *src, int max_depth,
 
     // if we are not in the last tree level, we try to go deeper.
     if (level_start[next_node_level] + powers_of_two[next_node_level] <
-        n_datapoints) {
+        subtree_size) {
       ++next_node_level;
     }
     // we go up only when we reach the last tree level.

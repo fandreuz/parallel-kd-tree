@@ -89,8 +89,6 @@ private:
   // number of items assigned to a particular core (i.e. non-parallelizable with
   // MPI).
   array_size tree_size = 0;
-  // maximum depth of the sub-tree assigned to this core.
-  int max_tree_depth = 0;
 
   // DataPoints assigned to this process/core. see also
   // build_tree_single_core().
