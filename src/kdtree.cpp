@@ -45,6 +45,11 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
       surplus_workers =
           compute_n_surplus_processes(n_parallel_workers, max_parallel_depth);
 
+#ifdef DEBUG
+      std::cout << "Starting parallel region with " << n_parallel_workers
+                << " parallel workers." << std::endl;
+#endif
+
 #ifdef USE_MPI
       // we initialize the pool using the biggest possible number of components
       // we will ever need for this branch.
