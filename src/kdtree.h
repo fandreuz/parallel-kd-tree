@@ -122,7 +122,7 @@ private:
   // root node of the kd-tree grown by this greenhouse.
   KNode<data_type> *grown_kd_tree = nullptr;
 
-  data_type *grow_kd_tree(std::vector<DataPoint> data_points);
+  data_type *grow_kd_tree(std::vector<DataPoint> &data_points);
 
 #ifdef USE_MPI
   data_type *retrieve_dataset_info();

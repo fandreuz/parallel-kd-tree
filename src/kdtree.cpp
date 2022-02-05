@@ -19,9 +19,10 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
 #endif
   }
 
+  std::vector<DataPoint> data_points =
+      as_data_points(data, this->n_datapoints, this->n_components);
   // 1D representation of our KDTree, or nullptr (if not main process)
-  data_type *tree = grow_kd_tree(
-      as_data_points(data, this->n_datapoints, this->n_components));
+  data_type *tree = grow_kd_tree(data_points);
 
   // tree is nullptr if the branch assigned to this process (in MPI) was empty
   if (tree != nullptr)
@@ -35,8 +36,10 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
     delete[] data;
 }
 
-data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> data_points) {
-#pragma omp parallel
+data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> &data_points) {
+#pragma omp parallel default(none)                                             \
+    shared(n_parallel_workers, max_parallel_depth, surplus_workers, std::cout, \
+           growing_tree, tree_size, data_points)
   {
 #pragma omp single
     {

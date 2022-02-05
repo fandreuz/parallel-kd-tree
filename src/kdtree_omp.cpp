@@ -79,7 +79,7 @@ void KDTreeGreenhouse::build_tree_single_core(
 
     std::vector<DataPoint>::iterator right_branch_first_point =
         first_data_point + split_point_idx + 1;
-#pragma omp task default(shared) final(no_spawn_more_threads)
+#pragma omp task final(no_spawn_more_threads)
     {
 #ifdef DEBUG
       std::cout << "Task assigned to thread " << omp_get_thread_num()
