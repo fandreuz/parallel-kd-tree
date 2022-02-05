@@ -71,34 +71,35 @@ void KDTreeGreenhouse::build_tree_parallel(
 #endif
 
   int next_depth = depth + 1;
-  int right_process_rank = compute_next_process_rank(
-      rank, max_depth, next_depth, surplus_processes, n_parallel_workers);
+  int right_process_rank =
+      compute_next_process_rank(rank, max_parallel_depth, next_depth,
+                                surplus_workers, n_parallel_workers);
 
   if (right_process_rank == -1) {
     if (n_datapoints > 0) {
 #ifdef DEBUG
       std::cout << "[rank" << rank
-                << "]: no available processes, going serial from now "
+                << "]: no available processes, going single core from now "
                 << std::endl;
 #endif
 
-      // we want that the serial branch is storable in an array whose size is
-      // a powersum of two
-      serial_tree_size = powersum_of_two(n_datapoints, true);
+      // we want that the single core branch is storable in an array whose size
+      // is a powersum of two
+      tree_size = powersum_of_two(n_datapoints, true);
       // sum of them are NOT going to be initialized since they are placeholders
       // of leafs (last level of the tree) that are not present since
       // n_datapoints < powersum_of_two
-      serial_tree = new std::optional<DataPoint>[serial_tree_size];
+      growing_tree = new std::optional<DataPoint>[tree_size];
 
       int starting_region_width;
 #ifdef ALTERNATIVE_SERIAL_WRITE
-      starting_region_width = serial_tree_size;
+      starting_region_width = tree_size;
 #else
       starting_region_width = 1;
 #endif
 
-      build_tree_serial(first_data_point, end_data_point, depth,
-                        starting_region_width, 0, 0);
+      build_tree_single_core(first_data_point, end_data_point, depth,
+                             starting_region_width, 0, 0);
     } else {
 #ifdef DEBUG
       std::cout << "[rank" << rank << "]: build_tree_parallel is dead now "
@@ -197,16 +198,15 @@ data_type *KDTreeGreenhouse::finalize() {
   data_type *right_branch_buffer = nullptr;
 
   data_type *left_branch_buffer = nullptr;
-  array_size left_branch_size = serial_tree_size;
+  array_size left_branch_size = tree_size;
 
-  if (serial_tree_size > 0) {
-    left_branch_buffer = unpack_optional_array(serial_tree, serial_tree_size,
+  if (tree_size > 0) {
+    left_branch_buffer = unpack_optional_array(growing_tree, tree_size,
                                                n_components, EMPTY_PLACEHOLDER);
 #ifdef ALTERNATIVE_SERIAL_WRITE
-    data_type *temp_left_buffer =
-        new data_type[serial_tree_size * n_components];
-    rearrange_kd_tree(temp_left_buffer, left_branch_buffer, max_serial_depth,
-                      serial_tree_size, n_components);
+    data_type *temp_left_buffer = new data_type[tree_size * n_components];
+    rearrange_kd_tree(temp_left_buffer, left_branch_buffer, max_tree_depth,
+                      tree_size, n_components);
     delete[] left_branch_buffer;
     left_branch_buffer = temp_left_buffer;
 #endif
