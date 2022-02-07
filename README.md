@@ -219,7 +219,7 @@ There are some configurations available:
 - [ ] Minor optimizations:
   - [ ] `noexcept`;
   - [ ] `-fargument-noalias`;
-  - [ ] `std::distance` is `O(N)`.
+  - [x] `std::distance` is `O(N)`.
 - [ ] Comparison against other implementations(?)
 
 ## Interesting points

@@ -19,7 +19,7 @@ data_type *unpack_array(std::vector<DataPoint>::iterator first_point,
                         std::vector<DataPoint>::iterator last_point,
                         int n_components) {
   data_type *unpacked =
-      new data_type[std::distance(first_point, last_point) * n_components];
+      new data_type[(last_point - first_point) * n_components];
   unpack_array(unpacked, first_point, last_point, n_components);
   return unpacked;
 }
@@ -200,8 +200,7 @@ array_size sort_and_split(DataPoint *array, array_size n_datapoints, int axis) {
 array_size sort_and_split(std::vector<DataPoint>::iterator first_data_point,
                           std::vector<DataPoint>::iterator last_data_point,
                           int axis) {
-  // TODO: improve this
-  array_size size = std::distance(first_data_point, last_data_point);
+  array_size size = last_data_point - first_data_point;
   // the second part of median_idx is needed to unbalance the split towards
   // the left region (which is the one which may parallelize with the highest
   // probability).
