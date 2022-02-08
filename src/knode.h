@@ -1,5 +1,4 @@
-#ifndef TREE_H
-#define TREE_H
+#pragma once
 
 #include <iostream>
 #include <limits>
@@ -152,5 +151,3 @@ public:
    */
   KNode<T> *get_right() const { return right; }
 };
-
-#endif // TREE_H
