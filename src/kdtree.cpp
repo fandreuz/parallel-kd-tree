@@ -117,13 +117,7 @@ void KDTreeGreenhouse::build_tree_single_core(
     array_size branch_starting_index) {
   // this is equivalent to say that there is at most one data point in the
   // sequence
-  if (first_data_point + 1 == end_data_point) {
-    // if we encounter the flag ALTERNATIVE_SERIAL_WRITE the parameter
-    // branch_starting_index will always be zero, therefore it does not
-    // interphere with this writing.
-    growing_tree[region_start_index + branch_starting_index].emplace(
-        DataPoint(std::move(*first_data_point)));
-  } else {
+  if (first_data_point + 1 != end_data_point) {
     int dimension = select_splitting_dimension(depth, n_components);
     array_size split_point_idx =
         sort_and_split(first_data_point, end_data_point, dimension);
@@ -190,5 +184,11 @@ void KDTreeGreenhouse::build_tree_single_core(
 // function die. this is not a big deal since all recursive call are going to
 // be there for a long time anyway.
 #pragma omp taskwait
+  } else {
+    // if we encounter the flag ALTERNATIVE_SERIAL_WRITE the parameter
+    // branch_starting_index will always be zero, therefore it does not
+    // interphere with this writing.
+    growing_tree[region_start_index + branch_starting_index].emplace(
+        DataPoint(std::move(*first_data_point)));
   }
 }
