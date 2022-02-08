@@ -19,6 +19,7 @@
 FLAGS = -std=c++17 -Wall -Wextra
 UTILITIES = main.cpp file_utils.cpp tree_printer.cpp utils.cpp kdtree.cpp
 ADDITIONAL_FLAGS =
+HPC_FLAGS = -O3 -march=native
 
 # OpenMP or MPI?
 ifeq ($(src), mpi)
@@ -47,13 +48,13 @@ debug:
 	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -g -D DEBUG -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
 
 output:
-	$(COMPILER) $(FLAGS) -O3 $(ADDITIONAL_FLAGS) -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(HPC_FLAGS) $(ADDITIONAL_FLAGS) -D OUTPUT $(UTILITIES) $(SRC) -o $(OUT)
 
 test:
-	$(COMPILER) $(FLAGS) -O3 $(ADDITIONAL_FLAGS) -D TEST $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(HPC_FLAGS) $(ADDITIONAL_FLAGS) -D TEST $(UTILITIES) $(SRC) -o $(OUT)
 
 time:
-	$(COMPILER) $(FLAGS) -O3 $(ADDITIONAL_FLAGS) -D TIME -O3 $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(HPC_FLAGS) $(ADDITIONAL_FLAGS) -D TIME -O3 $(UTILITIES) $(SRC) -o $(OUT)
 
 leaks:
 	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -static-libasan -fsanitize=address -g -D DEBUG $(UTILITIES) $(SRC) -o $(OUT)
@@ -62,7 +63,7 @@ mpidebug:
 	$(COMPILER) $(FLAGS) $(ADDITIONAL_FLAGS) -g -D DEBUG -D MPI_DEBUG $(UTILITIES) $(SRC) -o $(OUT)
 
 file:
-	$(COMPILER) $(FLAGS) -O3 $(ADDITIONAL_FLAGS) -D STORE_TO_FILE $(UTILITIES) $(SRC) -o $(OUT)
+	$(COMPILER) $(FLAGS) $(HPC_FLAGS) $(ADDITIONAL_FLAGS) -D STORE_TO_FILE $(UTILITIES) $(SRC) -o $(OUT)
 
 clean:
 	rm *.x
