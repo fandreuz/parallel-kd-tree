@@ -9,8 +9,11 @@
 #include <vector>
 #ifdef USE_MPI
 #include <mpi.h>
-#else
+#elseif USE_OMP
 #include <omp.h>
+#else
+#include <chrono>
+#include <cstdint>
 #endif
 
 inline data_type *read_file_serial(const std::string filename,
@@ -48,8 +51,14 @@ inline void write_file_serial(const std::string &filename,
 inline double get_time() {
 #ifdef USE_MPI
   return MPI_Wtime();
-#else
+#elseif USE_OMP
   return omp_get_wtime();
+#else
+  return (double)(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                      std::chrono::high_resolution_clock::now()
+                          .time_since_epoch())
+                      .count()) /
+         1000000000;
 #endif
 }
 

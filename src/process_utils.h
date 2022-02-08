@@ -4,7 +4,7 @@
 
 #ifdef USE_MPI
 #include <mpi.h>
-#else
+#elseif USE_OMP
 #include <omp.h>
 #endif
 
@@ -97,8 +97,10 @@ inline int get_n_parallel_workers() {
   int n_processes;
   MPI_Comm_size(MPI_COMM_WORLD, &n_processes);
   return n_processes;
-#else
+#elseif USE_OMP
   return omp_get_num_threads();
+#else
+  return 1;
 #endif
 }
 
@@ -111,7 +113,9 @@ inline int get_rank() {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   return rank;
-#else
+#elseif USE_OMP
   return omp_get_thread_num();
+#else
+  return 0;
 #endif
 }

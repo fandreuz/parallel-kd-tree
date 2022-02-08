@@ -27,9 +27,13 @@ ifeq ($(src), mpi)
 	ADDITIONAL_FLAGS += -D USE_MPI
 	COMPILER = mpic++
 	OUT = tree_mpi.x
+else ifeq ($(src), none)
+	SRC = kdtree_omp.cpp
+	COMPILER = g++
+	OUT = tree_serial.x
 else
 	SRC = kdtree_omp.cpp
-	ADDITIONAL_FLAGS += -fopenmp
+	ADDITIONAL_FLAGS += -D USE_OMP -fopenmp
 	COMPILER = g++
 	OUT = tree_omp.x
 endif
