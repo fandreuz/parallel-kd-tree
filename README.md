@@ -9,9 +9,9 @@ points in a convenient way. This kind of representation can be used to implement
 algorithms like K-Nearest Neighbors (KNN) very efficiently [2].
 
 Below you find two possible representations for a k-d tree (k=3):
-Visual | Textual
---- | ---
-![k-d tree 0](res/kd_tree_img0.png) | ![k-d tree 0](res/kd_tree_img0_textual.png)
+Surfaces | Branches | Textual
+--- | --- | ---
+![k-d tree 0](res/kd_tree_img0.png) | ![k-d tree 0](res/kd_tree_img3.png) | ![k-d tree 0](res/kd_tree_img0_textual.png)
 
 The procedure employed to build such a structure is the following:
 

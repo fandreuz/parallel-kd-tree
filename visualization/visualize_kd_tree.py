@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import namedtuple
+from sympy import Point, Line
 
 KDTreeNode = namedtuple("KDTreeNode", ["value", "left", "right"])
 
@@ -40,12 +41,16 @@ class KDTreeVisualization:
     def __init__(
         self,
         plane_alpha=0.4,
-        intersection_lines_width=3,
+        intersection_lines_width=2,
+        branches_lines_width=3,
+        branches_lines_color="red",
         point_size=75,
         max_depth=-1,
     ):
         self.plane_alpha = plane_alpha
         self.intersection_lines_width = intersection_lines_width
+        self.branches_lines_width = branches_lines_width
+        self.branches_lines_color = branches_lines_color
         self.point_size = point_size
         self.max_depth = max_depth
 
@@ -97,9 +102,6 @@ class KDTreeVisualization:
     # axes mn/mx are the min/max limit used in linspace to define an
     # experimental plane (to be cut according to limits)
     def draw_node(self, ax, node, lower_limits, upper_limits, depth):
-        if node == None:
-            return
-
         split_axis = depth % self.n_axes
 
         tp = self.get_surface(node.value, split_axis)
@@ -114,19 +116,59 @@ class KDTreeVisualization:
                 ax.plot(*l, color="k", linewidth=self.intersection_lines_width)
         ax.scatter(*node.value, marker="o", s=self.point_size)
 
-        left_lower_limits = list(lower_limits)
-        left_upper_limits = list(upper_limits)
-        left_upper_limits[split_axis] = node.value[split_axis]
-        self.draw_node(
-            ax, node.left, left_lower_limits, left_upper_limits, depth + 1
-        )
+        if not (self.max_depth > -1 and depth > self.max_depth):
+            if node.right and node.left:
+                p1 = Point(*node.left.value)
+                p2 = Point(*node.right.value)
+                p3 = Point(*node.value)
 
-        right_lower_limits = list(lower_limits)
-        right_upper_limits = list(upper_limits)
-        right_lower_limits[split_axis] = node.value[split_axis]
-        self.draw_node(
-            ax, node.right, right_lower_limits, right_upper_limits, depth + 1
-        )
+                line = Line(p1, p2)
+                perp_segment = line.perpendicular_segment(p3)
+                m = line.intersection(perp_segment)[0]
+
+                ax.plot(
+                    *zip(tuple(p3), tuple(m)),
+                    linewidth=self.branches_lines_width,
+                    color=self.branches_lines_color
+                )
+                ax.plot(
+                    *zip(p1, p2),
+                    linewidth=self.branches_lines_width,
+                    color=self.branches_lines_color
+                )
+                ax.plot(
+                    *zip(p1, p2),
+                    linewidth=self.branches_lines_width,
+                    color=self.branches_lines_color
+                )
+            elif node.right or node.left:
+                p1 = (node.left if node.left else node.right).value
+                p2 = node.value
+                ax.plot(
+                    *zip(tuple(p1), tuple(p2)),
+                    linewidth=self.branches_lines_width,
+                    color=self.branches_lines_color
+                )
+
+        if node.left:
+            left_lower_limits = list(lower_limits)
+            left_upper_limits = list(upper_limits)
+            left_upper_limits[split_axis] = node.value[split_axis]
+            self.draw_node(
+                ax, node.left, left_lower_limits, left_upper_limits, depth + 1
+            )
+
+        if node.right:
+            right_lower_limits = list(lower_limits)
+            right_upper_limits = list(upper_limits)
+            right_lower_limits[split_axis] = node.value[split_axis]
+            self.draw_node(
+                ax,
+                node.right,
+                right_lower_limits,
+                right_upper_limits,
+                depth + 1,
+            )
 
     # visualize the KDTree rooted in `root`. this method also computes some
     # instance variables (min_value, max_value, n_axes) used by other methods
