@@ -9,7 +9,7 @@
 #include <vector>
 #ifdef USE_MPI
 #include <mpi.h>
-#elseif USE_OMP
+#elif USE_OMP
 #include <omp.h>
 #else
 #include <chrono>
@@ -51,7 +51,7 @@ inline void write_file_serial(const std::string &filename,
 inline double get_time() {
 #ifdef USE_MPI
   return MPI_Wtime();
-#elseif USE_OMP
+#elif USE_OMP
   return omp_get_wtime();
 #else
   return (double)(std::chrono::duration_cast<std::chrono::nanoseconds>(
