@@ -23,11 +23,13 @@ The procedure employed to build such a structure is the following:
 halves along the chosen axis.
 
 The algorithms stops when the dataset contains only one point. Below you find
-the progression of the algorithm at increasing depths of the tree:
+the progression of the algorithm at increasing depths of the tree, in the two
+visualizations provided by our visualizer tool (surfaces and branches):
 
 | Depth 0                                               | Depth 1                                               | Depth 2                                               |
 | ----------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
 | ![k-d tree progress 0](res/kd_tree_progress_img0.png) | ![k-d tree progress 1](res/kd_tree_progress_img1.png) | ![k-d tree progress 2](res/kd_tree_progress_img2.png) |
+| ![k-d tree progress 0](res/kd_tree_progress_img0_branches.png) | ![k-d tree progress 1](res/kd_tree_progress_img1_branches.png) | ![k-d tree progress 2](res/kd_tree_progress_img2_branches.png) |
 
 A k-d tree may be represented with a binary tree, whose nodes
 are defined approximately in the following way:
