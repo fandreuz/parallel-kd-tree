@@ -173,14 +173,41 @@ array_size sort_and_split(std::vector<DataPoint>::iterator first_data_point,
  * @return std::vector<DataPoint>
  */
 inline std::vector<DataPoint>
-as_data_points(data_type *data, array_size n_datapoints, int n_components) {
+as_data_points(data_type *data, data_type **scattered_components,
+               data_type ***scattered_components_indexes,
+               array_size n_datapoints, int n_components) {
+
   std::vector<DataPoint> data_points;
   if (data == nullptr)
     return data_points;
 
+#ifdef IMPROVED_MEMORY_ACCESS
+  *scattered_components = new data_type[n_datapoints * n_components];
+  *scattered_components_indexes = new data_type *[n_datapoints * n_components];
+
+  data_type *loc_scattered_components = *scattered_components;
+  data_type **loc_scattered_components_indexes = *scattered_components_indexes;
+#else
+  *scattered_components = nullptr;
+  *scattered_components_indexes = nullptr;
+#endif
+
   data_points.reserve(n_datapoints);
   for (array_size i = 0; i < n_datapoints; i++) {
+#ifdef IMPROVED_MEMORY_ACCESS
+    array_size components_offset = i * n_components;
+
+    for (int j = 0; j < n_components; ++j) {
+      data_type *address = loc_scattered_components + j * n_datapoints + i;
+      *address = data[components_offset + j];
+      loc_scattered_components_indexes[components_offset + j] = address;
+    }
+    data_points.push_back(
+        DataPoint(data + components_offset,
+                  loc_scattered_components_indexes + components_offset));
+#else
     data_points.push_back(DataPoint(data + i * n_components));
+#endif
   }
   return data_points;
 }

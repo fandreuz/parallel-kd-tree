@@ -19,8 +19,12 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
 #endif
   }
 
-  std::vector<DataPoint> data_points =
-      as_data_points(data, this->n_datapoints, this->n_components);
+  data_type *scattered_components_array = nullptr;
+  data_type **scattered_components_indexes = nullptr;
+
+  std::vector<DataPoint> data_points = as_data_points(
+      data, &scattered_components_array, &scattered_components_indexes,
+      this->n_datapoints, this->n_components);
   // 1D representation of our KDTree, or nullptr (if not main process)
   data_type *tree = grow_kd_tree(data_points);
 
@@ -34,6 +38,8 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
 
   if (should_delete_data)
     delete[] data;
+  delete[] scattered_components_array;
+  delete[] scattered_components_indexes;
 }
 
 data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> &data_points) {
