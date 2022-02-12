@@ -7,7 +7,7 @@
 #include <mpi.h>
 #endif
 
-#if !defined(DOUBLE_PRECISION)
+#ifndef USE_DOUBLE_PRECISION_DATA
 /**
  * @def
  * @brief The datatype of the k-d tree.
