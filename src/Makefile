@@ -38,6 +38,11 @@ else
 	OUT = tree_omp.x
 endif
 
+# floating point number precision
+ifeq ($(prec), double)
+	ADDITIONAL_FLAGS += -D USE_DOUBLE_PRECISION_DATA
+endif
+
 # alternative writing mode?
 ifeq ($(write), alternative)
 	ADDITIONAL_FLAGS += -D ALTERNATIVE_SERIAL_WRITE

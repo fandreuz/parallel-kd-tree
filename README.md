@@ -26,9 +26,9 @@ The algorithms stops when the dataset contains only one point. Below you find
 the progression of the algorithm at increasing depths of the tree, in the two
 visualizations provided by our visualizer tool (surfaces and branches):
 
-| Depth 0                                               | Depth 1                                               | Depth 2                                               |
-| ----------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
-| ![k-d tree progress 0](res/kd_tree_progress_img0.png) | ![k-d tree progress 1](res/kd_tree_progress_img1.png) | ![k-d tree progress 2](res/kd_tree_progress_img2.png) |
+| Depth 0                                                        | Depth 1                                                        | Depth 2                                                        |
+| -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
+| ![k-d tree progress 0](res/kd_tree_progress_img0.png)          | ![k-d tree progress 1](res/kd_tree_progress_img1.png)          | ![k-d tree progress 2](res/kd_tree_progress_img2.png)          |
 | ![k-d tree progress 0](res/kd_tree_progress_img0_branches.png) | ![k-d tree progress 1](res/kd_tree_progress_img1_branches.png) | ![k-d tree progress 2](res/kd_tree_progress_img2_branches.png) |
 
 A k-d tree may be represented with a binary tree, whose nodes
@@ -67,7 +67,7 @@ The strategy is very similar to the one presented in [MPI](#mpi), we use
 [task](https://www.openmp.org/wp-content/uploads/sc15-openmp-CT-MK-tasking.pdf)s
 to distribute the work easily.
 
-## Compile
+## Compilation
 
 Clone the repository and navigate to the folder `src`. A `Makefile` is
 available along with the following recipes:
@@ -81,16 +81,22 @@ available along with the following recipes:
 | `leaks`    | Find memory leaks in the source code. The executable does not produce any output.                                                                                   |
 | `mpidebug` | Produces an executable that can be debugged using gdb (the rank of the process to be controlled via gdb must be set via the environment variable `MPI_DEBUG_RANK`). |
 
-Moreover, in order to choose between MPI and OpenMP, you should append the
-command-line parameter (e.g. `src=mpi`). By default (i.e. if `src` is omitted)
-we use OpenMP. The result of the compilation is the file `tree_omp.x` (or
-`tree_mpi.x`).
+There are also some optional parameters which are used to select additional
+features:
+
+| Parameter | Values                  | Explanation                                                                                                                 | Default   |
+| --------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `src`     | `mpi`/`omp`/`none`      | Framework used for the parallelization (`none` produced a serial version of the code).                                      | `omp`     |
+| `prec`    | `double`                | Precision used to represents the values in memory (`double` leads to wore performance, in particular with MPI).             | `float`   |
+| `write`   | `alternative`/`default` | Enable alternative writing to fix _false sharing_ (see the PDF report for more details).                                    | `default` |
+| `size`    | `big`/`default`         | Uses the biggest possible data type for the indexes of arrays used inside the code (may lead to worse performance overall). | `default` |
 
 For instance, the following produces the executable `tree_mpi.x` which prints
-only the time needed to build the tree using MPI:
+the time needed to build the tree using **MPI**, and represents data as
+`double` values in memory:
 
 ```
-make time src=mpi
+make time src=mpi prec=double
 ```
 
 ## Usage
@@ -110,7 +116,7 @@ or
 mpirun -np ... tree_mpi.x
 ```
 
-### Specify a dataset
+### Specifying a dataset
 
 By default the dataset used is the file `benchmark/benchmark1.csv`, but you can
 specify your own dataset via a command line argument. Valid datasets are CSV
@@ -126,7 +132,7 @@ file `foo.csv` in the current directory:
 mpirun -np 10 tree_mpi.x foo.csv
 ```
 
-### Save results
+### Saving results
 
 If you compiled with the recipe `make file` (see [Compile](#compile)) you can
 save the result to a CSV file, which allows you to do some more things on your
@@ -220,15 +226,9 @@ There are some configurations available:
 - [ ] Performance evaluation;
 - [ ] Minor optimizations:
   - [ ] `noexcept`;
-  - [ ] `-fargument-noalias`;
+  - [x] `-fargument-noalias`;
   - [x] `std::distance` is `O(N)`.
 - [ ] Comparison against other implementations(?)
-
-## Interesting points
-+ `right_branch_memory_pool` in `kdtree.h` (we just re-use multiple time an
-  array allocated on the heap);
-+ Two possible write modes for the serial generation of a k-d tree (mainly to
-  fix [*false sharing*](https://en.wikipedia.org/wiki/False_sharing)).
 
 ## References
 
