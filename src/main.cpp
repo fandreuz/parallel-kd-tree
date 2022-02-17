@@ -4,7 +4,8 @@ template void log_message(std::string);
 template void log_message(KNode<data_type> &);
 
 int main(int argc, char **argv) {
-  init_parallel_environment(&argc, &argv);
+  int thread_level_provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &thread_level_provided);
 
   const std::string filename =
       argc > 1 ? argv[1] : "../benchmark/benchmark1.csv";
@@ -54,5 +55,5 @@ int main(int argc, char **argv) {
     log_message("!!! NO !!!");
 #endif
 
-  finalize_parallel_environment();
+  MPI_Finalize();
 }

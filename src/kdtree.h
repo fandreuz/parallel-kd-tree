@@ -13,11 +13,8 @@
 #include <unistd.h>
 #include <vector>
 
-#ifdef USE_MPI
 #include <mpi.h>
-#else
 #include <omp.h>
-#endif
 
 /**
  * @def
@@ -65,26 +62,27 @@ private:
   // splittings.
   int starting_depth = 0;
 
-#ifdef USE_MPI
   // rank of this process
   int rank = -1;
 
   // an MPI_Communicator which does not hold the main process.
   MPI_Comm no_main_communicator;
-#endif
 
   // number of MPI processes/OMP threads available
-  int n_parallel_workers = -1;
+  int n_mpi_processes = -1;
+  int n_omp_threads = -1;
 
   // maximum depth of the tree at which we can parallelize using OMP/MPI. after
   // this depth no more right-branches can be assigned to non-surplus
   // workers.
-  int max_parallel_depth = 0;
+  int max_mpi_parallel_depth = 0;
+  int max_omp_parallel_depth = 0;
 
   // number of additional processes/threads that are not enough to parallelize
   // an entire level of the tree, and are therefore assigned
   // left-to-right until there are no more left.
-  int surplus_workers = 0;
+  int surplus_mpi_workers = 0;
+  int surplus_omp_workers = 0;
 
   // number of items assigned to a particular core (i.e. non-parallelizable with
   // MPI).
@@ -94,14 +92,13 @@ private:
   // build_tree_single_core().
   std::optional<DataPoint> *growing_tree = nullptr;
 
-#ifdef USE_MPI
   // rank of the MPI parent process of this process
   int parent = -1;
 
   // DataPoint used to split a branch assigned to this process. this process
   // then received the left branch resulting from the split, and assigned the
   // right branch to another MPI process.
-  std::vector<DataPoint> parallel_splits;
+  std::vector<DataPoint> mpi_splits;
 
   // MPI children of this process, i.e. processes that received a right branch
   // from this process.
@@ -114,29 +111,29 @@ private:
   // an MPI request which monitors the operation of sending data in the right
   // branch to another MPI process.
   MPI_Request right_branch_send_data_request = MPI_REQUEST_NULL;
-#endif
 
   // full size (different than the number of datapoints) of the kd-tree grown by
   // this greenhouse.
   array_size grown_kdtree_size = 0;
+  array_size grown_single_process_kdtree_size = 0;
   // root node of the kd-tree grown by this greenhouse.
   KNode<data_type> *grown_kd_tree = nullptr;
 
   data_type *grow_kd_tree(std::vector<DataPoint> &data_points);
 
-#ifdef USE_MPI
   data_type *retrieve_dataset_info();
-  void build_tree_parallel(std::vector<DataPoint>::iterator first_data_point,
-                           std::vector<DataPoint>::iterator end_data_point,
-                           int depth);
-#endif
+  void build_tree_mpi(std::vector<DataPoint>::iterator first_data_point,
+                      std::vector<DataPoint>::iterator end_data_point,
+                      int depth);
 
-  void build_tree_single_core(std::vector<DataPoint>::iterator first_data_point,
-                              std::vector<DataPoint>::iterator end_data_point,
-                              int depth, array_size region_width,
-                              array_size region_start_index,
-                              array_size branch_starting_index);
-  data_type *finalize();
+  void
+  build_tree_single_process(std::vector<DataPoint>::iterator first_data_point,
+                            std::vector<DataPoint>::iterator end_data_point,
+                            int depth, array_size region_width,
+                            array_size region_start_index,
+                            array_size branch_starting_index);
+  data_type *finalize_mpi(data_type *single_process_tree);
+  data_type *finalize_single_process();
 
 public:
   KDTreeGreenhouse(data_type *data, array_size n_datapoints, int n_components);

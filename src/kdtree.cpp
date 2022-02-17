@@ -5,18 +5,11 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
     : n_datapoints{n_datapoints}, n_components{n_components} {
   bool should_delete_data = false;
 
-// we are not interested in the rank for OpenMP
-#ifdef USE_MPI
-  rank = get_rank();
-#endif
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   if (data == nullptr) {
-#ifdef USE_MPI
     should_delete_data = true;
     data = retrieve_dataset_info();
-#else
-    throw std::invalid_argument("Received a null dataset.");
-#endif
   }
 
   std::vector<DataPoint> data_points =
@@ -37,61 +30,45 @@ KDTreeGreenhouse::KDTreeGreenhouse(data_type *data, array_size n_datapoints,
 }
 
 data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> &data_points) {
-#pragma omp parallel default(none)                                             \
-    shared(n_parallel_workers, max_parallel_depth, surplus_workers, std::cout, \
-           growing_tree, tree_size, data_points)
-  {
-#pragma omp single
-    {
-      n_parallel_workers = get_n_parallel_workers();
-      max_parallel_depth = compute_max_depth(n_parallel_workers);
-      surplus_workers =
-          compute_n_surplus_processes(n_parallel_workers, max_parallel_depth);
+  MPI_Comm_size(MPI_COMM_WORLD, &n_mpi_processes);
+  max_mpi_parallel_depth = compute_max_depth(n_mpi_processes);
+  surplus_mpi_workers =
+      compute_n_surplus_processes(n_mpi_processes, max_mpi_parallel_depth);
 
 #ifdef DEBUG
-      std::cout << "Starting parallel region with " << n_parallel_workers
-                << " parallel workers." << std::endl;
+  std::cout << "Starting parallel MPI region with " << max_mpi_parallel_depth
+            << " parallel workers." << std::endl;
 #endif
 
-#ifdef USE_MPI
-      // we initialize the pool using the biggest possible number of components
-      // we will ever need for this branch.
-      right_branch_memory_pool = new data_type[n_datapoints / 2 * n_components];
+  // we initialize the pool using the biggest possible number of components
+  // we will ever need for this branch.
+  right_branch_memory_pool = new data_type[n_datapoints / 2 * n_components];
 
-      build_tree_parallel(data_points.begin(), data_points.end(),
-                          starting_depth);
+  build_tree_mpi(data_points.begin(), data_points.end(), starting_depth);
 
-      // before deleting the pool, we wait the last communication to be
-      // completed
-      MPI_Wait(&right_branch_send_data_request, MPI_STATUS_IGNORE);
-      delete[] right_branch_memory_pool;
-#else
-      // we want to store the tree (in a temporary way) in an array whose size
-      // is a powersum of two
-      tree_size = powersum_of_two(n_datapoints, true);
-      growing_tree = new std::optional<DataPoint>[tree_size];
+  // before deleting the pool, we wait the last communication to be
+  // completed
+  MPI_Wait(&right_branch_send_data_request, MPI_STATUS_IGNORE);
+  delete[] right_branch_memory_pool;
 
-      int starting_region_width;
-#ifdef ALTERNATIVE_SERIAL_WRITE
-      starting_region_width = tree_size;
-#else
-      starting_region_width = 1;
-#endif
+  if (!data_points.empty()) {
+    data_type *single_process_tree = finalize_single_process();
 
-      build_tree_single_core(data_points.begin(), data_points.end(), 0,
-                             starting_region_width, 0, 0);
-#endif
-    }
-  }
+    data_type *tree = finalize_mpi(single_process_tree);
 
-  if (!data_points.empty())
-    return finalize();
-  else
+    // we do not need to free this because:
+    // 1. if tree == single_process_tree we actually have not to free
+    // 2. otherwise, tree is single_process_tree is deleted inside finalize_mpi
+    //if (tree != single_process_tree)
+    //  delete[] single_process_tree;
+
+    return tree;
+  } else
     return nullptr;
 }
 
 /*
-   Construct a tree on a single core (maybe via OpenMP). The current process
+   Construct a tree on a single process (maybe via OpenMP). The current process
    takes care of both the left and right branch.
 
    A region (i.e. k contiguous elements) of growing_tree holds an entire level
@@ -110,7 +87,7 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> &data_points) {
    - branch_starting_index is the index of growing_tree (starting from
       region_width) in which the item used to split this branch is stored.
 */
-void KDTreeGreenhouse::build_tree_single_core(
+void KDTreeGreenhouse::build_tree_single_process(
     std::vector<DataPoint>::iterator first_data_point,
     std::vector<DataPoint>::iterator end_data_point, int depth,
     array_size region_width, array_size region_start_index,
@@ -153,34 +130,30 @@ void KDTreeGreenhouse::build_tree_single_core(
 #endif
     depth += 1;
 
-// in case we're on OpenMP, we need to understand whether we can spawn more
-// OpenMP threads
-#ifdef USE_OMP
-    bool no_spawn_more_threads =
-        depth > max_parallel_depth + 1 ||
-        (depth == max_parallel_depth + 1 && get_rank() >= surplus_workers);
-#endif
+    // in case we're on OpenMP, we need to understand whether we can spawn more
+    // OpenMP threads
+    bool no_spawn_more_threads = depth > max_omp_parallel_depth + 1 ||
+                                 (depth == max_omp_parallel_depth + 1 &&
+                                  omp_get_thread_num() >= surplus_omp_workers);
 
     std::vector<DataPoint>::iterator right_branch_first_point =
         first_data_point + split_point_idx + 1;
 #pragma omp task final(no_spawn_more_threads)
     {
 #ifdef DEBUG
-#ifdef USE_OMP
       std::cout << "Task assigned to thread " << omp_get_thread_num()
                 << std::endl;
 #endif
-#endif
       // right
-      build_tree_single_core(right_branch_first_point, end_data_point, depth,
-                             region_width, region_start_index_right,
-                             branch_start_index_right);
+      build_tree_single_process(right_branch_first_point, end_data_point, depth,
+                                region_width, region_start_index_right,
+                                branch_start_index_right);
     }
     // left
     if (split_point_idx > 0)
-      build_tree_single_core(first_data_point, right_branch_first_point - 1,
-                             depth, region_width, region_start_index_left,
-                             branch_start_index_left);
+      build_tree_single_process(first_data_point, right_branch_first_point - 1,
+                                depth, region_width, region_start_index_left,
+                                branch_start_index_left);
 
 // there are variables on the stack, we should wait before letting this
 // function die. this is not a big deal since all recursive call are going to
@@ -193,4 +166,20 @@ void KDTreeGreenhouse::build_tree_single_core(
     growing_tree[region_start_index + branch_starting_index].emplace(
         DataPoint(std::move(*first_data_point)));
   }
+}
+
+data_type *KDTreeGreenhouse::finalize_single_process() {
+  grown_single_process_kdtree_size = tree_size;
+  data_type *tree =
+      unpack_optional_array(growing_tree, grown_single_process_kdtree_size,
+                            n_components, EMPTY_PLACEHOLDER);
+#ifdef ALTERNATIVE_SERIAL_WRITE
+  data_type *temp_tree =
+      new data_type[grown_single_process_kdtree_size * n_components];
+  rearrange_kd_tree(temp_tree, tree, grown_single_process_kdtree_size,
+                    n_components);
+  delete[] tree;
+  tree = temp_tree;
+#endif
+  return tree;
 }

@@ -37,20 +37,20 @@ data_type *KDTreeGreenhouse::retrieve_dataset_info() {
 }
 
 /*
-   Construct a tree in a parallel way. The current process takes care of the
-   left branch, and delegates the right branch to the process
-   rank+2^(D - depth), where D = log2(n_parallel_workers).
+     Construct a tree in a parallel way. The current process takes care of the
+     left branch, and delegates the right branch to the process
+     rank+2^(D - depth), where D = log2(n_parallel_workers).
 
-   This function uses the assumption that we always have 2^k processes, where
-   k is a natural number.
+     This function uses the assumption that we always have 2^k processes, where
+     k is a natural number.
 
-   - first_data_point is an iterator pointing to the first data point in the
-      set;
-   - end_data_point is an iterator pointing to past-the-last data point;
-   - depth is the depth of a node created by a call to build_tree. depth starts
-    from 0
-*/
-void KDTreeGreenhouse::build_tree_parallel(
+     - first_data_point is an iterator pointing to the first data point in the
+        set;
+     - end_data_point is an iterator pointing to past-the-last data point;
+     - depth is the depth of a node created by a call to build_tree. depth
+     starts from 0
+  */
+void KDTreeGreenhouse::build_tree_mpi(
     std::vector<DataPoint>::iterator first_data_point,
     std::vector<DataPoint>::iterator end_data_point, int depth) {
 #ifdef MPI_DEBUG
@@ -72,37 +72,60 @@ void KDTreeGreenhouse::build_tree_parallel(
 
   int next_depth = depth + 1;
   int right_process_rank =
-      compute_next_process_rank(rank, max_parallel_depth, next_depth,
-                                surplus_workers, n_parallel_workers);
+      compute_next_process_rank(rank, max_mpi_parallel_depth, next_depth,
+                                surplus_mpi_workers, n_mpi_processes);
 
   if (right_process_rank == -1) {
     if (n_datapoints > 0) {
 #ifdef DEBUG
       std::cout << "[rank" << rank
-                << "]: no available processes, going single core from now "
+                << "]: no available processes, going single process from now "
                 << std::endl;
 #endif
 
-      // we want that the single core branch is storable in an array whose size
-      // is a powersum of two
+      // we want that the single core branch is storable in an array whose
+      // size is a powersum of two
       tree_size = powersum_of_two(n_datapoints, true);
-      // sum of them are NOT going to be initialized since they are placeholders
-      // of leafs (last level of the tree) that are not present since
-      // n_datapoints < powersum_of_two
+      // sum of them are NOT going to be initialized since they are
+      // placeholders of leafs (last level of the tree) that are not present
+      // since n_datapoints < powersum_of_two
       growing_tree = new std::optional<DataPoint>[tree_size];
 
-      int starting_region_width;
-#ifdef ALTERNATIVE_SERIAL_WRITE
-      starting_region_width = tree_size;
-#else
-      starting_region_width = 1;
+      // we want to store the tree (in a temporary way) in an array whose
+      // size is a powersum of two
+      tree_size = powersum_of_two(n_datapoints, true);
+      growing_tree = new std::optional<DataPoint>[tree_size];
+
+#pragma omp parallel default(none) shared(                                     \
+    n_omp_threads, max_omp_parallel_depth, surplus_omp_workers, std::cout,     \
+    growing_tree, tree_size, first_data_point, end_data_point, depth)
+      {
+#pragma omp single
+        {
+          n_omp_threads = omp_get_num_threads();
+          max_omp_parallel_depth = compute_max_depth(n_omp_threads);
+          surplus_omp_workers = compute_n_surplus_processes(
+              n_omp_threads, max_omp_parallel_depth);
+
+#ifdef DEBUG
+          std::cout << "[rank" << rank << "] Starting parallel OMP region with "
+                    << n_omp_threads << " parallel workers." << std::endl;
 #endif
 
-      build_tree_single_core(first_data_point, end_data_point, depth,
-                             starting_region_width, 0, 0);
+          int starting_region_width;
+#ifdef ALTERNATIVE_SERIAL_WRITE
+          starting_region_width = tree_size;
+#else
+          starting_region_width = 1;
+#endif
+
+          build_tree_single_process(first_data_point, end_data_point, depth,
+                                    starting_region_width, 0, 0);
+        }
+      }
     } else {
 #ifdef DEBUG
-      std::cout << "[rank" << rank << "]: build_tree_parallel is dead now "
+      std::cout << "[rank" << rank << "]: build_tree_mpi is dead now "
                 << std::endl;
 #endif
       // otherwise there's nothing to do
@@ -114,8 +137,7 @@ void KDTreeGreenhouse::build_tree_parallel(
     if (n_datapoints > 0) {
       split_point_idx =
           sort_and_split(first_data_point, end_data_point, dimension);
-      parallel_splits.push_back(
-          std::move(*(first_data_point + split_point_idx)));
+      mpi_splits.push_back(std::move(*(first_data_point + split_point_idx)));
       right_branch_size = n_datapoints - split_point_idx - 1;
 
       // even if we did not send anything to the right process, we still need
@@ -128,12 +150,6 @@ void KDTreeGreenhouse::build_tree_parallel(
                 << dimension << ", split_idx = " << split_point_idx
                 << ", rank of the expected children is "
                 << children[children.size() - 1] << std::endl;
-#endif
-    } else {
-#ifdef DEBUG
-      std::cout << "[rank" << rank
-                << "]: simulating a parallel split to wake rank"
-                << right_process_rank << std::endl;
 #endif
     }
 
@@ -174,8 +190,7 @@ void KDTreeGreenhouse::build_tree_parallel(
     n_datapoints = split_point_idx;
 
     // this process takes care of the left part
-    build_tree_parallel(first_data_point, right_branch_first_point - 1,
-                        next_depth);
+    build_tree_mpi(first_data_point, right_branch_first_point - 1, next_depth);
 
     // the buffer will be destroyed when the stack is destroyed, therefore we
     // wait the end of the asynchronous operation
@@ -183,7 +198,7 @@ void KDTreeGreenhouse::build_tree_parallel(
   }
 }
 
-data_type *KDTreeGreenhouse::finalize() {
+data_type *KDTreeGreenhouse::finalize_mpi(data_type *single_process_tree) {
   // we wait for all the child processes to complete their work
   int n_children = children.size();
 
@@ -197,23 +212,11 @@ data_type *KDTreeGreenhouse::finalize() {
   // buffer which contains the split indexes from the right branch
   data_type *right_branch_buffer = nullptr;
 
-  data_type *left_branch_buffer = nullptr;
-  array_size left_branch_size = tree_size;
+  data_type *left_branch_buffer = single_process_tree;
+  array_size left_branch_size = grown_single_process_kdtree_size;
 
-  if (tree_size > 0) {
-    left_branch_buffer = unpack_optional_array(growing_tree, tree_size,
-                                               n_components, EMPTY_PLACEHOLDER);
-#ifdef ALTERNATIVE_SERIAL_WRITE
-    data_type *temp_left_buffer = new data_type[tree_size * n_components];
-    rearrange_kd_tree(temp_left_buffer, left_branch_buffer, tree_size,
-                      n_components);
-    delete[] left_branch_buffer;
-    left_branch_buffer = temp_left_buffer;
-#endif
-  }
-
-  // merged_array contains the values which results from merging a right branch
-  // with a left branch.
+  // merged_array contains the values which results from merging a right
+  // branch with a left branch.
   data_type *merging_array;
   for (int i = n_children - 1; i >= 0; --i) {
     right_rank = children.at(i);
@@ -261,7 +264,7 @@ data_type *KDTreeGreenhouse::finalize() {
       }
     }
 
-    DataPoint split_item = std::move(parallel_splits[i]);
+    DataPoint split_item = std::move(mpi_splits[i]);
 
     merging_array = new data_type[(branch_size * 2 + 1) * n_components];
 
@@ -278,8 +281,8 @@ data_type *KDTreeGreenhouse::finalize() {
     // represents the left branch buffer
     left_branch_buffer = merging_array;
 
-    // the new size of the left branch is the sum of the former left branch size
-    // and of the right branch size, plus 1 (the split point)
+    // the new size of the left branch is the sum of the former left branch
+    // size and of the right branch size, plus 1 (the split point)
     left_branch_size = branch_size * 2 + 1;
 
     right_branch_size = 0;

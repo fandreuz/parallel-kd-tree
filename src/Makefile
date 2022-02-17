@@ -16,27 +16,12 @@
 #		   	           files)
 
 .DEFAULT_GOAL := output
-FLAGS = -std=c++17 -Wall -Wextra
-UTILITIES = main.cpp file_utils.cpp tree_printer.cpp utils.cpp kdtree.cpp
+FLAGS = -std=c++17 -Wall -Wextra -fopenmp
+UTILITIES = main.cpp file_utils.cpp tree_printer.cpp utils.cpp kdtree.cpp kdtree_mpi.cpp
 ADDITIONAL_FLAGS =
+OUT = tree.x
+COMPILER = mpic++
 HPC_FLAGS = -O3 -march=native
-
-# OpenMP or MPI?
-ifeq ($(src), mpi)
-	SRC = kdtree_mpi.cpp
-	ADDITIONAL_FLAGS += -D USE_MPI
-	COMPILER = mpic++
-	OUT = tree_mpi.x
-else ifeq ($(src), none)
-	SRC = kdtree_omp.cpp
-	COMPILER = g++
-	OUT = tree_serial.x
-else
-	SRC = kdtree_omp.cpp
-	ADDITIONAL_FLAGS += -D USE_OMP -fopenmp
-	COMPILER = g++
-	OUT = tree_omp.x
-endif
 
 # floating point number precision
 ifeq ($(prec), double)
