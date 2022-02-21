@@ -53,16 +53,13 @@ data_type *KDTreeGreenhouse::grow_kd_tree(std::vector<DataPoint> &data_points) {
 
   if (!data_points.empty()) {
     data_type *single_process_tree = finalize_single_process();
-
-    data_type *tree = finalize_mpi(single_process_tree);
+    return finalize_mpi(single_process_tree);
 
     // we do not need to free this because:
     // 1. if tree == single_process_tree we actually have not to free
     // 2. otherwise, tree is single_process_tree is deleted inside finalize_mpi
     //if (tree != single_process_tree)
     //  delete[] single_process_tree;
-
-    return tree;
   } else
     return nullptr;
 }
